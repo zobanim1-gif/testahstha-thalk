@@ -18,23 +18,20 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Create Complete Android Project Files
+    - name: Setup Project and Generate Wrapper
       run: |
-        # إنشاء المجلدات الأساسية
+        # التأكد من مجلدات المشروع الأساسية
         mkdir -p app/src/main/java/com/royal/poetry/master
         mkdir -p app/src/main/res/values
         mkdir -p app/src/main/res/layout
 
-        # 1. إنشاء ملف AndroidManifest.xml
+        # 1. AndroidManifest.xml
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             package="com.royal.poetry.master">
             <application
                 android:allowBackup="true"
-                android:icon="@mipmap/ic_launcher"
                 android:label="تستحق ذلك"
-                android:roundIcon="@mipmap/ic_launcher_round"
-                android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
                 <activity
                     android:name=".MainActivity"
@@ -48,13 +45,11 @@ jobs:
         </manifest>
         EOF
 
-        # 2. إنشاء MainActivity.java
+        # 2. MainActivity.java
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
-
         import android.os.Bundle;
         import androidx.appcompat.app.AppCompatActivity;
-
         public class MainActivity extends AppCompatActivity {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +59,7 @@ jobs:
         }
         EOF
 
-        # 3. إنشاء ملفات التكوين app/build.gradle
+        # 3. app/build.gradle
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
@@ -89,13 +84,14 @@ jobs:
         }
         EOF
 
-        # 4. إنشاء ملفات الجذر build.gradle و settings.gradle
+        # 4. build.gradle الرئيسي
         cat << 'EOF' > build.gradle
         plugins {
             id 'com.android.application' version '8.1.1' apply false
         }
         EOF
 
+        # 5. settings.gradle
         cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
@@ -115,14 +111,16 @@ jobs:
         include ':app'
         EOF
 
-    - name: Download and Setup Gradle
-      run: |
+        # تحميل Gradle وتثبيته وتوليد ملفات الـ Wrapper محلياً في المشروع
         wget https://services.gradle.org/distributions/gradle-8.2-bin.zip
         unzip -q gradle-8.2-bin.zip
-        echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
+        ./gradle-8.2/bin/gradle wrapper --gradle-version 8.2
 
-    - name: Build Debug APK Directly
-      run: gradle assembleDebug --stacktrace
+        # منح صلاحية التنفيذ لملف gradlew الجديد
+        chmod +x ./gradlew
+
+    - name: Build Debug APK with gradlew
+      run: ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
