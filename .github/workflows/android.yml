@@ -18,24 +18,24 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Project and Generate Wrapper
+    - name: Setup Project Structure and Accept SDK Licenses
       run: |
-        # التأكد من مجلدات المشروع الأساسية
+        # إنشاء المجلدات الأساسية
         mkdir -p app/src/main/java/com/royal/poetry/master
         mkdir -p app/src/main/res/values
-        mkdir -p app/src/main/res/layout
 
-        # 1. AndroidManifest.xml
+        # حقن رخص أندرويد تلقائياً لمنع توقف السيرفر
+        ANDROID_HOME=${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}
+        mkdir -p $ANDROID_HOME/licenses
+        echo -e "\n24333f8a63b6825ea3c5514f03c2eb1ce6296d3f" > $ANDROID_HOME/licenses/android-sdk-license
+        echo -e "\n84831b9409646a918e30573bab4c9c91346d8abd" >> $ANDROID_HOME/licenses/android-sdk-license
+
+        # 1. AndroidManifest
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             package="com.royal.poetry.master">
-            <application
-                android:allowBackup="true"
-                android:label="تستحق ذلك"
-                android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
-                <activity
-                    android:name=".MainActivity"
-                    android:exported="true">
+            <application android:label="تستحق ذلك">
+                <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
@@ -45,16 +45,14 @@ jobs:
         </manifest>
         EOF
 
-        # 2. MainActivity.java
+        # 2. MainActivity
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
         import android.os.Bundle;
         import androidx.appcompat.app.AppCompatActivity;
         public class MainActivity extends AppCompatActivity {
-            @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                setContentView(android.R.layout.activity_list_item);
             }
         }
         EOF
@@ -66,17 +64,13 @@ jobs:
         }
         android {
             namespace 'com.royal.poetry.master'
-            compileSdk 34
+            compileSdk 33
             defaultConfig {
                 applicationId "com.royal.poetry.master"
                 minSdk 24
-                targetSdk 34
+                targetSdk 33
                 versionCode 1
                 versionName "1.0"
-            }
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
             }
         }
         dependencies {
@@ -84,7 +78,7 @@ jobs:
         }
         EOF
 
-        # 4. build.gradle الرئيسي
+        # 4. Root build.gradle
         cat << 'EOF' > build.gradle
         plugins {
             id 'com.android.application' version '8.1.1' apply false
@@ -107,19 +101,18 @@ jobs:
                 mavenCentral()
             }
         }
-        rootProject.name = "TestahsthaThalk"
+        rootProject.name = "Test"
         include ':app'
         EOF
 
-        # تحميل Gradle وتثبيته وتوليد ملفات الـ Wrapper محلياً في المشروع
-        wget https://services.gradle.org/distributions/gradle-8.2-bin.zip
+        # تحميل وتثبيت Gradle 8.2
+        wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
         unzip -q gradle-8.2-bin.zip
-        ./gradle-8.2/bin/gradle wrapper --gradle-version 8.2
-
-        # منح صلاحية التنفيذ لملف gradlew الجديد
+        echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
+        gradle wrapper --gradle-version 8.2
         chmod +x ./gradlew
 
-    - name: Build Debug APK with gradlew
+    - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK Artifact
