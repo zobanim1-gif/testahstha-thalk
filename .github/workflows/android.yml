@@ -16,8 +16,11 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Build APK Now
+    - name: Clean and Build APK
       run: |
+        # حذف أي ملفات قديمة لضمان عدم بقاء أي كود قديم يتسبب بأخطاء
+        rm -rf app/src settings.gradle build.gradle gradle.properties
+
         mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values
 
         cat << 'EOF' > settings.gradle
@@ -38,7 +41,7 @@ jobs:
         EOF
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.royal.poetry.master">
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
         <application android:label="تستحق ذلك"><activity android:name=".MainActivity" android:exported="true">
         <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
         </activity></application></manifest>
@@ -49,11 +52,13 @@ jobs:
         import android.os.Bundle;
         import androidx.appcompat.app.AppCompatActivity;
         public class MainActivity extends AppCompatActivity {
-            protected void onCreate(Bundle s) { super.onCreate(s); }
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+            }
         }
         EOF
 
-        # تفعيل إعدادات AndroidX المطلوبة لإصلاح الخطأ فوراً
         echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" > gradle.properties
         echo "android.useAndroidX=true" >> gradle.properties
         echo "android.enableJetifier=true" >> gradle.properties
