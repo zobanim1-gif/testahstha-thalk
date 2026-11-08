@@ -19,7 +19,7 @@ jobs:
     - name: Clean and Build APK
       run: |
         rm -rf app/src settings.gradle build.gradle gradle.properties
-        mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values
+        mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values app/src/main/res/layout
 
         cat << 'EOF' > settings.gradle
         pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
@@ -45,24 +45,32 @@ jobs:
         </activity></application></manifest>
         EOF
 
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#FFFFFF">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="تستحق ذلك"
+                android:textSize="28sp"
+                android:textColor="#333333"/>
+        </RelativeLayout>
+        EOF
+
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
         import android.app.Activity;
         import android.os.Bundle;
-        import android.widget.TextView;
-        import android.graphics.Color;
-        import android.view.Gravity;
 
         public class MainActivity extends Activity {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                TextView tv = new TextView(this);
-                tv.setText("تستحق ذلك");
-                tv.setTextSize(28);
-                tv.setTextColor(Color.parseColor("#333333"));
-                tv.setGravity(Gravity.CENTER);
-                setContentView(tv);
+                setContentView(R.layout.activity_main);
             }
         }
         EOF
