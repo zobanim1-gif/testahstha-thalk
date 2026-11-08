@@ -18,21 +18,111 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Prepare Project Structure and Wrapper
+    - name: Create Complete Android Project Files
       run: |
-        # التأكد من وجود مجلد app و src/main
-        mkdir -p app/src/main
-        
-        # تحميل وتثبيت Gradle 8.2 مباشرة
+        # إنشاء المجلدات الأساسية
+        mkdir -p app/src/main/java/com/royal/poetry/master
+        mkdir -p app/src/main/res/values
+        mkdir -p app/src/main/res/layout
+
+        # 1. إنشاء ملف AndroidManifest.xml
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.royal.poetry.master">
+            <application
+                android:allowBackup="true"
+                android:icon="@mipmap/ic_launcher"
+                android:label="تستحق ذلك"
+                android:roundIcon="@mipmap/ic_launcher_round"
+                android:supportsRtl="true"
+                android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+        # 2. إنشاء MainActivity.java
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
+        package com.royal.poetry.master;
+
+        import android.os.Bundle;
+        import androidx.appcompat.app.AppCompatActivity;
+
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(android.R.layout.activity_list_item);
+            }
+        }
+        EOF
+
+        # 3. إنشاء ملفات التكوين app/build.gradle
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+        }
+        android {
+            namespace 'com.royal.poetry.master'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.royal.poetry.master"
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+        }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        EOF
+
+        # 4. إنشاء ملفات الجذر build.gradle و settings.gradle
+        cat << 'EOF' > build.gradle
+        plugins {
+            id 'com.android.application' version '8.1.1' apply false
+        }
+        EOF
+
+        cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        rootProject.name = "TestahsthaThalk"
+        include ':app'
+        EOF
+
+    - name: Download and Setup Gradle
+      run: |
         wget https://services.gradle.org/distributions/gradle-8.2-bin.zip
         unzip -q gradle-8.2-bin.zip
         echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
-        
-        # توليد ملفات الـ Wrapper لتنظيم العمل
-        gradle wrapper --gradle-version 8.2
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+    - name: Build Debug APK Directly
+      run: gradle assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
