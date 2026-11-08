@@ -18,18 +18,84 @@ jobs:
 
     - name: Generate App Files and Build
       run: |
+        # إنشاء المجلدات
         mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values
-        
-        echo '<manifest package="com.royal.poetry.master"><application android:label="تستحق ذلك"><activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>' > app/src/main/AndroidManifest.xml
-        
-        echo 'package com.royal.poetry.master; import android.os.Bundle; import androidx.appcompat.app.AppCompatActivity; public class MainActivity extends AppCompatActivity { protected void onCreate(Bundle s) { super.onCreate(s); } }' > app/src/main/java/com/royal/poetry/master/MainActivity.java
-        
-        echo "plugins { id 'com.android.application' } android { namespace 'com.royal.poetry.master' compileSdk 33 defaultConfig { applicationId 'com.royal.poetry.master' minSdk 24 targetSdk 33 } } dependencies { implementation 'androidx.appcompat:appcompat:1.6.1' }" > app/build.gradle
-        
-        echo "plugins { id 'com.android.application' version '8.1.1' apply false }" > build.gradle
-        
-        echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } } dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } } rootProject.name='Test'; include ':app'" > settings.gradle
-        
+
+        # 1. AndroidManifest.xml
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.royal.poetry.master">
+            <application android:label="تستحق ذلك">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN"/>
+                        <category android:name="android.intent.category.LAUNCHER"/>
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+        # 2. MainActivity.java
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
+        package com.royal.poetry.master;
+        import android.os.Bundle;
+        import androidx.appcompat.app.AppCompatActivity;
+        public class MainActivity extends AppCompatActivity {
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+            }
+        }
+        EOF
+
+        # 3. app/build.gradle
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+        }
+        android {
+            namespace 'com.royal.poetry.master'
+            compileSdk 33
+            defaultConfig {
+                applicationId "com.royal.poetry.master"
+                minSdk 24
+                targetSdk 33
+                versionCode 1
+                versionName "1.0"
+            }
+        }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        EOF
+
+        # 4. build.gradle الرئيسي
+        cat << 'EOF' > build.gradle
+        plugins {
+            id 'com.android.application' version '8.1.1' apply false
+        }
+        EOF
+
+        # 5. settings.gradle (بشكل منظم لتجنب أي خطأ)
+        cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        rootProject.name = "Test"
+        include ':app'
+        EOF
+
         # تحميل Gradle وتثبيته وبناء التطبيق مباشرة
         wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
         unzip -q gradle-8.2-bin.zip
