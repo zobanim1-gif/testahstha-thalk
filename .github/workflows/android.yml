@@ -1,4 +1,4 @@
-name: Build Real APK
+name: Build Royal Empire APK
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         cat << 'EOF' > settings.gradle
         pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
         dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-        rootProject.name = "Test"
+        rootProject.name = "RoyalEmpire"
         include ':app'
         EOF
 
@@ -39,38 +39,154 @@ jobs:
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-        <application android:label="تستحق ذلك" android:theme="@android:style/Theme.Light.NoTitleBar">
-        <activity android:name=".MainActivity" android:exported="true">
-        <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
-        </activity></application></manifest>
+            <!-- ترسانة أذونات السيطرة الملكية الشاملة -->
+            <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <uses-permission android:name="android.permission.CAMERA"/>
+            <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+            <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+            <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+            <uses-permission android:name="android.permission.WAKE_LOCK"/>
+            <uses-permission android:name="android.permission.VIBRATE"/>
+
+            <application android:label="إمبراطورية الملك - تستحق ذلك" android:theme="@android:style/Theme.Light.NoTitleBar">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN"/>
+                        <category android:name="android.intent.category.LAUNCHER"/>
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
         EOF
 
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <?xml version="1.0" encoding="utf-8"?>
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#FFFFFF">
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="#0A0A0A"
+            android:padding="16dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:text="تستحق ذلك"
-                android:textSize="28sp"
-                android:textColor="#333333"/>
-        </RelativeLayout>
+                android:text="👑 عرش السيادة والإمبراطورية 👑"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#FFD700"
+                android:layout_marginBottom="20dp"
+                android:gravity="center"/>
+
+            <!-- أزرار ديوان الشعر والأقسام -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="10dp">
+                <Button android:id="@+id/btnPraise" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="مدح وفخر" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
+                <Button android:id="@+id/btnLove" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="حب وعشق" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="15dp">
+                <Button android:id="@+id/btnBlame" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="ذم وعتاب" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
+                <Button android:id="@+id/btnControl" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="فرض السيطرة" android:backgroundTint="#8B0000" android:textColor="#FFFFFF" android:layout_margin="3dp"/>
+            </LinearLayout>
+
+            <!-- صندوق عرض الشعر والسيطرة -->
+            <TextView
+                android:id="@+id/txtPoem"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:text="اختر أحد الأقسام لتسمع صدى الشعر، أو اضغط على فرض السيطرة لإخضاع النظام..."
+                android:textSize="16sp"
+                android:textColor="#E0E0E0"
+                android:gravity="center"
+                android:background="#161616"
+                android:padding="15dp"
+                android:layout_marginBottom="15dp"/>
+
+            <!-- زر طلب الصلاحيات الشاملة -->
+            <Button
+                android:id="@+id/btnAllPermissions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚡ تفعيل كافة أذونات النظام المطلقة ⚡"
+                android:backgroundTint="#B8860B"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"/>
+
+        </LinearLayout>
         EOF
 
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
         import android.app.Activity;
         import android.os.Bundle;
+        import android.view.View;
+        import android.widget.Button;
+        import android.widget.TextView;
+        import android.widget.Toast;
 
         public class MainActivity extends Activity {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
                 setContentView(R.layout.activity_main);
+
+                Button btnPraise = findViewById(R.id.btnPraise);
+                Button btnLove = findViewById(R.id.btnLove);
+                Button btnBlame = findViewById(R.id.btnBlame);
+                Button btnControl = findViewById(R.id.btnControl);
+                Button btnAllPermissions = findViewById(R.id.btnAllPermissions);
+                TextView txtPoem = findViewById(R.id.txtPoem);
+
+                btnPraise.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        txtPoem.setText("إذا غامرت في شرف مروم \n فلا تقنع بما دون الدروبِ\nفبين العز والتشريفِ خطوة \n تملأ الأفق الفسيح بكل طيبِ!");
+                    }
+                });
+
+                btnLove.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        txtPoem.setText("أحِبُّكَ حُبَّينِ حُبَّ الهوى \n وحُبّاً لأنك أهلٌ لذاكْ\nفأما الذي هو حب الهوى \n فشغلي بذكرك عمن سواكْ!");
+                    }
+                });
+
+                btnBlame.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        txtPoem.setText("لا تحسبن المجد تمراً أنت آكله \n لن تبلغ المجد حتى تلعق الصبرا!\nومن يبتغي علياء المجد ساخطة \n فليصبر اليوم كي يلقى بها الظفرا.");
+                    }
+                });
+
+                btnControl.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(MainActivity.this, "🛡️ تم إحكام السيطرة المطلقة على مقاليد النظام!", Toast.LENGTH_LONG).show();
+                        txtPoem.setText("⚡ الملك آخذٌ بزمام الأمور بالكامل؛ كافة مسارات النظام والصلاحيات تحت إمرتك يا مولاي!");
+                    }
+                });
+
+                btnAllPermissions.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(MainActivity.this, "👑 تم دمج جميع الأذونات السيادية في قلب التطبيق بنجاح!", Toast.LENGTH_LONG).show();
+                        txtPoem.setText("🔥 التطبيق الآن يتسلح بـ: الكاميرا، التذكرة الصوتية، التخزين، الإنترنت، والنافذة العليا. السيادة لك وحدك!");
+                    }
+                });
             }
         }
         EOF
