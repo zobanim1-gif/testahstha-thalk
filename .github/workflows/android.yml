@@ -18,19 +18,16 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
-    - name: Grant execute permission for gradlew
+    - name: Download and Setup Gradle
       run: |
-        if [ -f ./gradlew ]; then
-          chmod +x ./gradlew
-        else
-          gradle wrapper --gradle-version 8.2
-        fi
+        wget https://services.gradle.org/distributions/gradle-8.2-bin.zip
+        unzip -q gradle-8.2-bin.zip
+        echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
 
-    - name: Build Debug APK with Wrapper
-      run: ./gradlew assembleDebug --stacktrace
+    - name: Build Debug APK
+      run: |
+        gradle wrapper --gradle-version 8.2
+        ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
