@@ -16,9 +16,7 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - uses: android-actions/setup-android@v3
-
-    - name: Generate App Files
+    - name: Generate App Files and Build
       run: |
         mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values
         
@@ -32,11 +30,14 @@ jobs:
         
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } } dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } } rootProject.name='Test'; include ':app'" > settings.gradle
         
+        # تحميل Gradle وتثبيته وبناء التطبيق مباشرة
+        wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
+        unzip -q gradle-8.2-bin.zip
+        export PATH=$PWD/gradle-8.2/bin:$PATH
+        
         gradle wrapper --gradle-version 8.2
         chmod +x ./gradlew
-
-    - name: Build APK
-      run: ./gradlew assembleDebug
+        ./gradlew assembleDebug --stacktrace
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
