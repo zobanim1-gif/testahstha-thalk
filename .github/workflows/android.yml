@@ -52,16 +52,15 @@ jobs:
             protected void onCreate(Bundle s) { super.onCreate(s); }
         }
         EOF
+
         wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
         unzip -q gradle-8.2-bin.zip
         export PATH=$PWD/gradle-8.2/bin:$PATH
+        
         gradle wrapper --gradle-version 8.2
         chmod +x ./gradlew
         ./gradlew assembleDebug
-        - uses: actions/upload-artifact@v4
-      with:
-        name: apk
-        path: app/build/outputs/apk/debug/app-debug.apk
+
     - uses: actions/upload-artifact@v4
       with:
         name: apk
