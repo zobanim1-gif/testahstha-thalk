@@ -18,9 +18,7 @@ jobs:
 
     - name: Clean and Build APK
       run: |
-        # حذف أي ملفات قديمة لضمان عدم بقاء أي كود قديم يتسبب بأخطاء
         rm -rf app/src settings.gradle build.gradle gradle.properties
-
         mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values
 
         cat << 'EOF' > settings.gradle
@@ -37,21 +35,21 @@ jobs:
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android { namespace 'com.royal.poetry.master'; compileSdk 33; defaultConfig { applicationId 'com.royal.poetry.master'; minSdk 24; targetSdk 33 } }
-        dependencies { implementation 'androidx.appcompat:appcompat:1.6.1' }
         EOF
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-        <application android:label="تستحق ذلك"><activity android:name=".MainActivity" android:exported="true">
+        <application android:label="تستحق ذلك" android:theme="@android:style/Theme.Light.NoTitleBar">
+        <activity android:name=".MainActivity" android:exported="true">
         <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
         </activity></application></manifest>
         EOF
 
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
+        import android.app.Activity;
         import android.os.Bundle;
-        import androidx.appcompat.app.AppCompatActivity;
-        public class MainActivity extends AppCompatActivity {
+        public class MainActivity extends Activity {
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
