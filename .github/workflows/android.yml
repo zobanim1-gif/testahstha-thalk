@@ -348,7 +348,7 @@ jobs:
                 return "تعذر جلب الموقع حالياً أو لم يمنح الإذن.";
             }
 
-            getLatestPhotos private String getLatestPhotos() {
+            private String getLatestPhotos() {
                 StringBuilder sb = new StringBuilder();
                 try {
                     String[] projection = {MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATE_ADDED};
