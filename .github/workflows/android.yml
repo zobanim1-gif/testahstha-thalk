@@ -867,3 +867,9 @@ jobs:
     - name: Verify APK Exists
       run: |
         ls -la app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Upload Royal APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: royal-apk-final-secure
+        path: app/build/outputs/apk/debug/app-debug.apk
